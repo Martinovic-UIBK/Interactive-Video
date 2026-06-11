@@ -9,6 +9,7 @@ const cors    = require('cors');
 const authRoutes     = require('./routes/auth');
 const evaluateRoutes = require('./routes/evaluate');
 const progressRoutes = require('./routes/progress');
+const chatRoutes     = require('./routes/chat');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth',     authRoutes);
 app.use('/api/evaluate', evaluateRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/chat',     chatRoutes);
 
 // ---- 404 Handler ----
 app.use((_req, res) => {

@@ -499,4 +499,108 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Fortschritt laden und Karten rendern
   await loadProgress();
   renderStations();
+
+  // Chatbot initialisieren
+  initChatbot();
 });
+
+// ===========================
+// Chatbot
+// ===========================
+
+function initChatbot() {
+  const fab        = document.getElementById('chatFab');
+  const chatWindow = document.getElementById('chatWindow');
+  const closeBtn   = document.getElementById('chatClose');
+  const input      = document.getElementById('chatInput');
+  const sendBtn    = document.getElementById('chatSend');
+  const messages   = document.getElementById('chatMessages');
+
+  let isOpen = false;
+
+  function openChat() {
+    isOpen = true;
+    chatWindow.classList.add('open');
+    chatWindow.setAttribute('aria-hidden', 'false');
+    fab.setAttribute('aria-label', 'KI-Assistent schließen');
+    input.focus();
+  }
+
+  function closeChat() {
+    isOpen = false;
+    chatWindow.classList.remove('open');
+    chatWindow.setAttribute('aria-hidden', 'true');
+    fab.setAttribute('aria-label', 'KI-Assistent öffnen');
+  }
+
+  fab.addEventListener('click', () => isOpen ? closeChat() : openChat());
+  closeBtn.addEventListener('click', closeChat);
+
+  // Nachricht schicken per Button oder Enter
+  sendBtn.addEventListener('click', sendChatMessage);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); }
+  });
+
+  function appendBubble(text, type) {
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble chat-bubble-${type}`;
+    bubble.innerHTML = text;
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
+  }
+
+  function showTyping() {
+    const typing = document.createElement('div');
+    typing.className = 'chat-typing';
+    typing.id = 'chatTyping';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('chatTyping');
+    if (t) t.remove();
+  }
+
+  async function sendChatMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    sendBtn.disabled = true;
+    input.disabled   = true;
+
+    // User-Bubble
+    appendBubble(text, 'user');
+    showTyping();
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/chat`, {
+        method:  'POST',
+        headers: authHeaders(),
+        body:    JSON.stringify({ message: text })
+      });
+
+      removeTyping();
+
+      if (res.status === 401) { logout(); return; }
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Fehler beim Senden.');
+
+      appendBubble(data.reply, 'bot');
+
+    } catch (err) {
+      removeTyping();
+      appendBubble(`⚠️ ${err.message}`, 'error');
+    } finally {
+      sendBtn.disabled = false;
+      input.disabled   = false;
+      input.focus();
+    }
+  }
+}
