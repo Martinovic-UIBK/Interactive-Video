@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – Innsbruck Lernplattform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+    <div class="auth-logo">
+      <span class="logo-icon">🏔️</span>
+      <h1>Innsbruck Erkunden</h1>
+      <p>Interaktive Stadttour für die Schule</p>
+    </div>
+
+    <h2 class="auth-title">Anmelden</h2>
+
+    <div class="auth-error" id="loginError"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="form-group">
+        <label for="username">Benutzername</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Dein Benutzername"
+          autocomplete="username"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="password">Passwort</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Dein Passwort"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+      <button type="submit" class="btn-primary" id="loginBtn">Anmelden</button>
+    </form>
+
+    <p class="auth-footer">
+      Noch kein Konto?
+      <a href="register.html">Jetzt registrieren</a>
+    </p>
+  </div>
+
+  <script>
+    // Backend-URL – muss nach dem Deployment auf deine Render-URL geändert werden
+    const BACKEND_URL = (() => {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3000';
+      }
+      // WICHTIG: Ersetze diese URL mit deiner echten Render-Backend-URL
+      return 'https://DEIN-BACKEND.onrender.com';
+    })();
+
+    // Wenn bereits eingeloggt, weiterleiten
+    if (localStorage.getItem('ibk_token')) {
+      window.location.href = 'index.html';
+    }
+
+    const form    = document.getElementById('loginForm');
+    const errDiv  = document.getElementById('loginError');
+    const btn     = document.getElementById('loginBtn');
+
+    function showError(msg) {
+      errDiv.textContent = msg;
+      errDiv.classList.add('visible');
+    }
+    function hideError() { errDiv.classList.remove('visible'); }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showError('Bitte Benutzername und Passwort eingeben.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Anmelden…';
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || 'Anmeldung fehlgeschlagen.');
+        }
+
+        localStorage.setItem('ibk_token', data.token);
+        localStorage.setItem('ibk_user', JSON.stringify({ id: data.userId, username: data.username }));
+        window.location.href = 'index.html';
+
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Anmelden';
+      }
+    });
+  </script>
+</body>
+</html>

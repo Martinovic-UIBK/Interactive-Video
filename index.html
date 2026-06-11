@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Innsbruck Erkunden – Lernplattform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== App Shell ===== -->
+  <div id="app">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="header-logo">🏔️</span>
+        <div>
+          <div class="header-title">Innsbruck Erkunden</div>
+          <div class="header-subtitle">Interaktive Stadttour</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="user-badge">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span id="userNameDisplay">…</span>
+        </div>
+        <button class="btn-logout" id="logoutBtn">Abmelden</button>
+      </div>
+    </header>
+
+    <!-- Hero / Progress -->
+    <section class="app-hero">
+      <h2>Entdecke <span>Innsbruck</span> 🏙️</h2>
+      <p>
+        Schau dir alle 12 Videos an, beantworte die Fragen und
+        erforsche die Geschichte und Sehenswürdigkeiten der Tiroler Hauptstadt!
+      </p>
+      <div class="progress-section">
+        <div class="progress-header">
+          <span class="progress-label">Dein Fortschritt</span>
+          <span class="progress-count" id="progressCount">0 / 12</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Station Grid -->
+    <main class="stations-section">
+      <div class="section-title">🗺️ Die 12 Stationen</div>
+      <div class="stations-grid" id="stationsGrid">
+        <!-- Karten werden per JS gerendert -->
+      </div>
+    </main>
+
+  </div><!-- /#app -->
+
+  <!-- ===== Modal ===== -->
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
+    <div class="modal" id="modal">
+
+      <div class="modal-header">
+        <div class="modal-station-info">
+          <div class="modal-icon" id="modalIcon">🏛️</div>
+          <div>
+            <div class="modal-title"   id="modalTitle">Stationsname</div>
+            <div class="modal-subtitle" id="modalSubtitle">Untertitel</div>
+            <div class="modal-location" id="modalLocation">📍 Ort</div>
+          </div>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="Schließen">✕</button>
+      </div>
+
+      <!-- Video -->
+      <div class="modal-video-section">
+        <div class="video-wrapper">
+          <div id="yt-player"></div>
+        </div>
+        <p class="video-hint" id="videoHint">
+          ⏳ Schau das Video vollständig an, um die Frage zu aktivieren.
+        </p>
+      </div>
+
+      <!-- Frage & Antwort -->
+      <div class="modal-question-section">
+        <div class="question-divider"></div>
+        <div class="question-label">✏️ Deine Aufgabe</div>
+        <p class="question-text" id="questionText">Frage wird geladen…</p>
+
+        <!-- Antwort-Bereich (wird für abgeschlossene Stationen ersetzt) -->
+        <div id="answerSection">
+          <textarea
+            class="answer-textarea"
+            id="answerInput"
+            placeholder="Schreibe hier deine Antwort…"
+            rows="4"
+            disabled
+          ></textarea>
+          <div class="submit-row">
+            <button class="btn-submit" id="submitBtn" disabled>
+              <span id="submitBtnText">Antwort senden</span>
+            </button>
+            <span class="submit-hint" id="submitHint">Zuerst Video fertig schauen</span>
+          </div>
+          <div class="feedback-box" id="feedbackBox">
+            <div class="feedback-header" id="feedbackHeader"></div>
+            <div class="feedback-text" id="feedbackText"></div>
+          </div>
+        </div>
+
+        <!-- Read-only View für abgeschlossene Stationen -->
+        <div id="completedSection" class="hidden">
+          <div class="feedback-box correct visible">
+            <div class="feedback-header correct">✅ Station abgeschlossen!</div>
+            <div class="feedback-text" id="completedFeedback"></div>
+          </div>
+          <div class="completed-answer-box">
+            <div class="completed-answer-label">Deine Antwort</div>
+            <div class="completed-answer-text" id="completedAnswer"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+  <!-- YouTube IFrame API – wird asynchron geladen -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+</body>
+</html>

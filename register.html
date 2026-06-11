@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrieren – Innsbruck Lernplattform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+    <div class="auth-logo">
+      <span class="logo-icon">🏔️</span>
+      <h1>Innsbruck Erkunden</h1>
+      <p>Interaktive Stadttour für die Schule</p>
+    </div>
+
+    <h2 class="auth-title">Konto erstellen</h2>
+
+    <div class="auth-error" id="regError"></div>
+
+    <form id="registerForm" novalidate>
+      <div class="form-group">
+        <label for="username">Benutzername</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Wähle einen Benutzernamen"
+          autocomplete="username"
+          required
+          minlength="3"
+          maxlength="30"
+        />
+      </div>
+      <div class="form-group">
+        <label for="password">Passwort</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Mindestens 6 Zeichen"
+          autocomplete="new-password"
+          required
+          minlength="6"
+        />
+      </div>
+      <div class="form-group">
+        <label for="passwordConfirm">Passwort bestätigen</label>
+        <input
+          type="password"
+          id="passwordConfirm"
+          name="passwordConfirm"
+          placeholder="Passwort wiederholen"
+          autocomplete="new-password"
+          required
+        />
+      </div>
+      <button type="submit" class="btn-primary" id="registerBtn">Konto erstellen</button>
+    </form>
+
+    <p class="auth-footer">
+      Bereits ein Konto?
+      <a href="login.html">Jetzt anmelden</a>
+    </p>
+  </div>
+
+  <script>
+    // Backend-URL – muss nach dem Deployment auf deine Render-URL geändert werden
+    const BACKEND_URL = (() => {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:3000';
+      }
+      // WICHTIG: Ersetze diese URL mit deiner echten Render-Backend-URL
+      return 'https://DEIN-BACKEND.onrender.com';
+    })();
+
+    // Wenn bereits eingeloggt, weiterleiten
+    if (localStorage.getItem('ibk_token')) {
+      window.location.href = 'index.html';
+    }
+
+    const form    = document.getElementById('registerForm');
+    const errDiv  = document.getElementById('regError');
+    const btn     = document.getElementById('registerBtn');
+
+    function showError(msg) {
+      errDiv.textContent = msg;
+      errDiv.classList.add('visible');
+    }
+    function hideError() { errDiv.classList.remove('visible'); }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm  = document.getElementById('passwordConfirm').value;
+
+      if (username.length < 3) {
+        showError('Der Benutzername muss mindestens 3 Zeichen lang sein.');
+        return;
+      }
+      if (password.length < 6) {
+        showError('Das Passwort muss mindestens 6 Zeichen lang sein.');
+        return;
+      }
+      if (password !== confirm) {
+        showError('Die Passwörter stimmen nicht überein.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Konto wird erstellt…';
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || 'Registrierung fehlgeschlagen.');
+        }
+
+        localStorage.setItem('ibk_token', data.token);
+        localStorage.setItem('ibk_user', JSON.stringify({ id: data.userId, username: data.username }));
+        window.location.href = 'index.html';
+
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Konto erstellen';
+      }
+    });
+  </script>
+</body>
+</html>
