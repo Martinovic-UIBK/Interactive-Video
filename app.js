@@ -499,17 +499,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Fortschritt laden und Karten rendern
   await loadProgress();
   renderStations();
-
-  // Chatbot initialisieren
-  initChatbot();
 });
 
 // ===========================
-// Chatbot
+// Chatbot – sofort beim Laden initialisieren (unabhängig von async)
 // ===========================
+
+// Direkt beim DOMContentLoaded, NICHT erst nach loadProgress
+document.addEventListener('DOMContentLoaded', () => { initChatbot(); });
 
 function initChatbot() {
   const fab        = document.getElementById('chatFab');
+  const heroBtn    = document.getElementById('chatHeroBtn');
   const chatWindow = document.getElementById('chatWindow');
   const closeBtn   = document.getElementById('chatClose');
   const input      = document.getElementById('chatInput');
@@ -533,7 +534,8 @@ function initChatbot() {
     fab.setAttribute('aria-label', 'KI-Assistent öffnen');
   }
 
-  fab.addEventListener('click', () => isOpen ? closeChat() : openChat());
+  fab.addEventListener('click',     () => isOpen ? closeChat() : openChat());
+  if (heroBtn) heroBtn.addEventListener('click', () => isOpen ? closeChat() : openChat());
   closeBtn.addEventListener('click', closeChat);
 
   // Nachricht schicken per Button oder Enter

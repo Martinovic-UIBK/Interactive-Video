@@ -886,6 +886,30 @@ a:hover { text-decoration: underline; }
    Chatbot – Floating Button & Chat Window
    ============================================================ */
 
+/* Hero-Button (groß, direkt sichtbar in der Hero-Sektion) */
+.chat-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #000;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  border: none;
+  border-radius: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.35);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.chat-hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(34, 211, 238, 0.55);
+}
+
 /* Floating Action Button */
 .chat-fab {
   position: fixed;
