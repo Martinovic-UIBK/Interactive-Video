@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 // ---- Middleware ----
 
 // CORS: erlaubt Zugriff vom Frontend (GitHub Pages + localhost)
+const allowedOrigins = ['https://martinovic-uibk.github.io', 'http://localhost:3000'];
 app.use(cors({
   origin: ['https://martinovic-uibk.github.io', 'http://localhost:3000'],
   credentials: true
