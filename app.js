@@ -8,7 +8,7 @@ const BACKEND_URL = (() => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:3000';
   }
-  return 'https://DEIN-BACKEND.onrender.com'; // ← Hier deine Render-URL eintragen
+  return 'https://interactive-video-backend.onrender.com';
 })();
 
 // ===========================
