@@ -888,21 +888,30 @@ a:hover { text-decoration: underline; }
 
 /* Hero-Button (groß, direkt sichtbar in der Hero-Sektion) */
 .chat-hero-btn {
+  position: relative;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 20px;
-  padding: 12px 28px;
+  justify-content: center;
+  gap: 10px;
+  margin: 28px auto 0;
+  padding: 18px 40px;
   background: linear-gradient(135deg, var(--accent-dark), var(--accent));
   color: #000;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   font-family: inherit;
   border: none;
-  border-radius: 28px;
+  border-radius: 32px;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.35);
+  box-shadow: 0 4px 24px rgba(34, 211, 238, 0.45);
   transition: transform var(--transition), box-shadow var(--transition);
+  animation: chatHeroPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes chatHeroPulse {
+  0%, 100% { box-shadow: 0 4px 24px rgba(34, 211, 238, 0.45); }
+  50%      { box-shadow: 0 4px 32px rgba(34, 211, 238, 0.8); }
 }
 
 .chat-hero-btn:hover {

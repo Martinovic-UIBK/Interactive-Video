@@ -523,7 +523,7 @@ function initChatbot() {
     isOpen = true;
     chatWindow.classList.add('open');
     chatWindow.setAttribute('aria-hidden', 'false');
-    fab.setAttribute('aria-label', 'KI-Assistent schließen');
+    fab.setAttribute('aria-label', 'Innsbruck-Bot schließen');
     input.focus();
   }
 
@@ -531,7 +531,7 @@ function initChatbot() {
     isOpen = false;
     chatWindow.classList.remove('open');
     chatWindow.setAttribute('aria-hidden', 'true');
-    fab.setAttribute('aria-label', 'KI-Assistent öffnen');
+    fab.setAttribute('aria-label', 'Innsbruck-Bot öffnen');
   }
 
   fab.addEventListener('click',     () => isOpen ? closeChat() : openChat());
