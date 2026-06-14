@@ -55,7 +55,7 @@ Schüler-Frage: ${message.trim()}`;
 
   } catch (err) {
     console.error('chat error:', err);
-    return res.status(500).json({ message: 'KI antwortet gerade nicht. Bitte erneut versuchen.' });
+    return res.status(500).json({ message: 'KI antwortet gerade nicht. Bitte erneut versuchen.', debug: err.message });
   }
 });
 
