@@ -133,7 +133,7 @@ const LESSON = {
     },
     {
       id: 8,
-      pauseAt: 184,
+      pauseAt: 185,
       title: "Die Annasäule",
       icon: "🏺",
       task: {
@@ -167,7 +167,7 @@ const LESSON = {
     },
     {
       id: 10,
-      pauseAt: 236,
+      pauseAt: 237,
       title: "Bergisel Schanze",
       icon: "🎿",
       task: {

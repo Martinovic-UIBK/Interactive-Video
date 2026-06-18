@@ -364,6 +364,8 @@ function renderTaskUI(task, isEnabled) {
     `;
     document.querySelectorAll('.choice-option').forEach(el => {
       el.addEventListener('click', () => {
+        // Während Timer läuft keine Auswahl möglich
+        if (document.getElementById('submitBtn')?.dataset.timerActive) return;
         if (!isMulti) document.querySelectorAll('.choice-option').forEach(o => o.classList.remove('selected'));
         el.classList.toggle('selected');
         document.getElementById('submitBtn').disabled =
@@ -503,13 +505,12 @@ function submitClientSide(chapter) {
     const sel = [...document.querySelectorAll('.choice-option.selected')].map(el => parseInt(el.dataset.index,10));
     isCorrect  = JSON.stringify([...sel].sort()) === JSON.stringify([...task.correct].sort());
     answerText = sel.map(i => task.options[i]).join(', ');
-    if (isCorrect) {
-      document.querySelectorAll('.choice-option').forEach(el => {
-        const i = parseInt(el.dataset.index,10);
-        if (task.correct.includes(i)) el.classList.add('correct-answer');
-        el.style.pointerEvents = 'none';
-      });
-    }
+    // Immer korrekte Antworten grün markieren und Optionen sperren
+    document.querySelectorAll('.choice-option').forEach(el => {
+      const i = parseInt(el.dataset.index,10);
+      if (task.correct.includes(i)) el.classList.add('correct-answer');
+      el.style.pointerEvents = 'none';
+    });
 
   } else if (task.type === 'sort') {
     isCorrect  = JSON.stringify(sortOrder) === JSON.stringify(task.items.map((_,i) => i));
@@ -540,18 +541,18 @@ function submitClientSide(chapter) {
 
     if (!isCorrect) {
       const direction = guessed < task.correct ? '📈 Der richtige Wert ist höher!' : '📉 Der richtige Wert ist niedriger!';
-      showFeedback(false, `${direction} Du lagst ${diff.toLocaleString('de-AT')} ${task.unit} daneben. Versuche es noch einmal! 😊`);
-      startRetryTimer(chapter, 15, () => {
-        slider.disabled = false;
-        track.style.display = 'none';
-        document.getElementById('estimateLegend').style.display = 'none';
-      });
+      slider.disabled = false;
+      showFeedback(false, direction);
+      startRetryTimer(chapter, 15);
       return;
     }
-    answerText = `${guessed.toLocaleString('de-AT')} ${task.unit} (±${diff})`;
+    // Richtig: Visualisierung für 10 Sekunden zeigen
+    track.style.display = 'block';
+    document.getElementById('estimateLegend').style.display = 'flex';
+    answerText = `${guessed.toLocaleString('de-AT')} ${task.unit}`;
   }
 
-  let feedbackText = isCorrect ? task.feedback : 'Versuche es noch einmal! 😊';
+  let feedbackText = isCorrect ? task.feedback : '';
 
   showFeedback(isCorrect, feedbackText);
 
@@ -559,7 +560,8 @@ function submitClientSide(chapter) {
     submitBtn.disabled = true;
     submitHint.textContent = '';
     saveProgressClientSide(chapter.id, answerText, task.feedback);
-    setTimeout(() => afterCorrectAnswer(chapter, task.feedback), 1200);
+    const delay = task.type === 'estimate' ? 10000 : 1200;
+    setTimeout(() => afterCorrectAnswer(chapter, task.feedback), delay);
   } else {
     startRetryTimer(chapter, 15);
   }
@@ -655,17 +657,22 @@ function startRetryTimer(chapter, seconds, onExpire) {
   const submitHint = document.getElementById('submitHint');
   if (!submitBtn) return;
   submitBtn.disabled = true;
+  submitBtn.dataset.timerActive = '1';
   document.getElementById('submitBtnText').textContent = `Nochmal versuchen (${seconds}s)`;
 
   let remaining = seconds;
   const timer = setInterval(() => {
+    const btn = document.getElementById('submitBtn');
+    if (!btn) { clearInterval(timer); return; }
     remaining--;
     if (remaining > 0) {
       document.getElementById('submitBtnText').textContent = `Nochmal versuchen (${remaining}s)`;
     } else {
       clearInterval(timer);
+      delete btn.dataset.timerActive;
       if (onExpire) onExpire();
-      submitHint.textContent = 'Versuche es nochmal!';
+      const hint = document.getElementById('submitHint');
+      if (hint) hint.textContent = 'Versuche es nochmal!';
       renderTaskUI(chapter.task, true);
     }
   }, 1000);
@@ -724,7 +731,9 @@ function showFeedback(correct, text) {
   box.className = `feedback-box ${correct ? 'correct' : 'incorrect'} visible`;
   hdr.className = `feedback-header ${correct ? 'correct' : 'incorrect'}`;
   hdr.textContent = correct ? '✅ Richtig!' : '😊 Fast! Versuche es nochmal…';
-  bdy.textContent = String(text).replace(/^[✅❌]\s*/,'');
+  const bodyText = String(text || '').replace(/^[✅❌]\s*/,'');
+  bdy.textContent = bodyText;
+  bdy.style.display = bodyText ? '' : 'none';
 }
 
 // ===========================
