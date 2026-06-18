@@ -27,12 +27,12 @@
 
 const LESSON = {
   title:     "Innsbruck – Interaktive Stadttour",
-  youtubeId: "REPLACE_ME_WITH_VIDEO_ID",
+  youtubeId: "2BxOLAmP5dc",
 
   chapters: [
     {
       id: 1,
-      pauseAt: 60,
+      pauseAt: 36,
       title: "Das Goldene Dachl",
       icon: "🏛️",
       task: {
@@ -45,7 +45,7 @@ const LESSON = {
     },
     {
       id: 2,
-      pauseAt: 130,
+      pauseAt: 57,
       title: "Die Hofburg",
       icon: "👑",
       task: {
@@ -63,7 +63,7 @@ const LESSON = {
     },
     {
       id: 3,
-      pauseAt: 200,
+      pauseAt: 72,
       title: "Der Stadtturm",
       icon: "🗼",
       task: {
@@ -80,7 +80,7 @@ const LESSON = {
     },
     {
       id: 4,
-      pauseAt: 280,
+      pauseAt: 110,
       title: "Die Triumphpforte",
       icon: "🏟️",
       task: {
@@ -91,7 +91,7 @@ const LESSON = {
     },
     {
       id: 5,
-      pauseAt: 360,
+      pauseAt: 135,
       title: "Hofkirche & Schwarze Mander",
       icon: "⚔️",
       task: {
@@ -104,7 +104,7 @@ const LESSON = {
     },
     {
       id: 6,
-      pauseAt: 440,
+      pauseAt: 163,
       title: "Dom zu St. Jakob",
       icon: "⛪",
       task: {
@@ -122,7 +122,7 @@ const LESSON = {
     },
     {
       id: 7,
-      pauseAt: 520,
+      pauseAt: 184,
       title: "Die Annasäule",
       icon: "🏺",
       task: {
@@ -139,7 +139,7 @@ const LESSON = {
     },
     {
       id: 8,
-      pauseAt: 600,
+      pauseAt: 200,
       title: "Nordkettenbahn",
       icon: "🏔️",
       task: {
@@ -156,7 +156,7 @@ const LESSON = {
     },
     {
       id: 9,
-      pauseAt: 680,
+      pauseAt: 236,
       title: "Bergisel Schanze",
       icon: "🎿",
       task: {
@@ -167,45 +167,5 @@ const LESSON = {
         feedback: "Richtig! Die Architektin Zaha Hadid entwarf die Schanze, die für die Vierschanzentournee und die Olympischen Spiele 1964/1976 bekannt ist."
       }
     },
-    {
-      id: 10,
-      pauseAt: 760,
-      title: "Der Inn-Fluss",
-      icon: "🌊",
-      task: {
-        type: "multiple",
-        question: "Was stimmt über den Inn-Fluss? (Mehrere Antworten möglich)",
-        options: [
-          "'Innsbruck' bedeutet 'Brücke über den Inn'",
-          "Der Inn entspringt in der Schweiz",
-          "Der Inn mündet in die Nordsee",
-          "Das Wasser ist grün durch Gletscherwasser"
-        ],
-        correct: [0, 1, 3],
-        feedback: "Genau! Der Name kommt von 'Brücke über den Inn', der Fluss kommt aus der Schweiz und mündet in die Donau – nicht Nordsee."
-      }
-    },
-    {
-      id: 11,
-      pauseAt: 840,
-      title: "Ferdinandeum",
-      icon: "🖼️",
-      task: {
-        type: "open",
-        question: "Was kann man im Tiroler Landesmuseum Ferdinandeum entdecken und nach wem ist es benannt?",
-        keyInfo: "Landesmuseum Tirols, gegründet 1823, Kaiser Ferdinand I., Kunst Kulturgeschichte, Gemälde, Archäologie, Naturwissenschaften"
-      }
-    },
-    {
-      id: 12,
-      pauseAt: 920,
-      title: "Volkskunstmuseum",
-      icon: "🎭",
-      task: {
-        type: "open",
-        question: "Was macht das Tiroler Volkskunstmuseum europaweit besonders?",
-        keyInfo: "Tiroler Bauernmöbel, Trachten, Krippen, Handwerk, eines der bedeutendsten Volkskunstmuseen Europas, neben Hofkirche"
-      }
-    }
   ]
 };
