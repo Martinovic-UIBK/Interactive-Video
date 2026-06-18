@@ -98,29 +98,15 @@ const LESSON = {
       title: "Der Hofgarten",
       icon: "🌿",
       task: {
-        type: "estimate_double",
-        question: "Errate zwei Fakten über den Innsbrucker Hofgarten!",
-        feedback: "Super! Der Hofgarten wurde um 1410 angelegt und hat eine Fläche von ca. 35.000 m². Er gehört zu den ältesten Gärten Österreichs.",
-        estimates: [
-          {
-            label: "Seit wann gibt es den Hofgarten? (Jahr)",
-            unit: "Jahr",
-            min: 1300,
-            max: 1900,
-            step: 10,
-            correct: 1410,
-            tolerance: 40
-          },
-          {
-            label: "Wie groß ist der Hofgarten?",
-            unit: "m²",
-            min: 5000,
-            max: 80000,
-            step: 1000,
-            correct: 35000,
-            tolerance: 8000
-          }
-        ]
+        type: "estimate",
+        question: "Wie groß ist der Innsbrucker Hofgarten?",
+        unit: "m²",
+        min: 10000,
+        max: 300000,
+        step: 5000,
+        correct: 100000,
+        tolerance: 25000,
+        feedback: "Der Hofgarten hat eine Fläche von etwa 100.000 m² (10 Hektar) – das entspricht ungefähr 14 Fußballfeldern!"
       }
     },
 
@@ -151,8 +137,8 @@ const LESSON = {
       icon: "🤫",
       task: {
         type: "open",
-        question: "Du stehst vor dem mysteriösen Flüsterbogen in Innsbruck – einem Bogen, der Geheimnisse flüstert! Was glaubst du: Was passiert, wenn du an einer Seite des Bogens flüsterst? Und warum könnte das physikalisch funktionieren?",
-        keyInfo: "Schall Schallwellen, Flüstern an einer Seite ist an der anderen Seite zu hören, Akustik, Reflexion, Gewölbe überträgt Klang, Ellipsenform, leiser Ton reist entlang der Wand"
+        question: "Du stehst vor dem mysteriösen Flüsterbogen in Innsbruck – einem Bogen, der Geheimnisse flüstert! Was glaubst du, was macht ihn so besonders?",
+        keyInfo: "Flüstern, Bogen, besonders, geheimnisvoll, Klang Schall Stimme übertragen hören, akustisch, interessant, kreativ"
       }
     },
 

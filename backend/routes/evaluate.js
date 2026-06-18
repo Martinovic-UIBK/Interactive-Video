@@ -80,12 +80,14 @@ Antworte NUR mit einem JSON-Objekt in dieser exakten Form (kein Markdown, kein z
 {"correct": boolean, "feedback": "string"}
 
 Regeln:
-- correct ist true wenn die Antwort mindestens 2 der erwarteten Kerninhalte sinngemäß erwähnt
+- correct ist true wenn die Antwort inhaltlich sinnvoll ist und mindestens 1-2 der erwarteten Kerninhalte trifft
+- WICHTIG bei Fragen nach konkreten Zahlen/Preisen/Mengen: Wenn die Antwort um mehr als das 5-fache vom richtigen Wert abweicht (z.B. "eine Million" statt "20.000 €"), ist correct IMMER false – egal wie die Begründung lautet
+- Bei kreativen/offenen Fragen ohne feste Zahl: großzügig bewerten, eigene Gedanken und kreative Antworten sind willkommen
 - feedback ist auf Deutsch, max. 3 kurze Sätze, einfache Sprache für 14-Jährige
 - Bei correct true: kurz und herzlich loben (z.B. "Super gemacht! 🎉"), dann eine interessante Zusatzinfo
 - Bei correct false: NIEMALS entmutigen. Zuerst etwas Positives sagen falls möglich. Dann einen konkreten Tipp geben der in die richtige Richtung zeigt, OHNE die Antwort direkt zu verraten. Zum Schluss aufmuntern (z.B. "Du schaffst das! 💪")
 - Vermeide Formulierungen wie "leider", "falsch", "nicht richtig" – stattdessen: "fast", "guter Ansatz", "noch ein kleiner Schritt fehlt"
-- Beispiel für falsches Feedback: "Guter Versuch! Ein Tipp: Schau dir nochmal an, wer die Hofburg umbauen ließ – es war eine bekannte Kaiserin. Du schaffst das! 💪"`;
+- Beispiel für falsches Feedback: "Guter Versuch! Ein Tipp: Der Wert liegt viel niedriger als du dachtest – denk an einen normalen Tagesausflug, nicht an ein teures Auto. Du schaffst das! 💪"`;
 
     const result   = await model.generateContent(prompt);
     const rawText  = result.response.text().trim();

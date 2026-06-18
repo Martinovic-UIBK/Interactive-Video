@@ -590,7 +590,13 @@ function submitClientSide(chapter) {
       }).join('  ');
       task.estimates.forEach((_, i) => { document.getElementById(`estimateSlider${i}`).disabled = false; });
       showFeedback(false, hints);
-      startRetryTimer(chapter, 15);
+      startRetryTimer(chapter, 15, () => {
+        task.estimates.forEach((_, i) => { document.getElementById(`estimateSlider${i}`).disabled = false; });
+        const btn = document.getElementById('submitBtn');
+        if (btn) { btn.disabled = false; document.getElementById('submitBtnText').textContent = 'Schätzungen abgeben'; }
+        const hint = document.getElementById('submitHint');
+        if (hint) hint.textContent = 'Schieberegler anpassen und nochmal versuchen';
+      });
       return;
     }
     // Richtig: Visualisierung 10s zeigen
@@ -626,7 +632,13 @@ function submitClientSide(chapter) {
       const direction = guessed < task.correct ? '📈 Der richtige Wert ist höher!' : '📉 Der richtige Wert ist niedriger!';
       slider.disabled = false;
       showFeedback(false, direction);
-      startRetryTimer(chapter, 15);
+      startRetryTimer(chapter, 15, () => {
+        slider.disabled = false;
+        const btn = document.getElementById('submitBtn');
+        if (btn) { btn.disabled = false; document.getElementById('submitBtnText').textContent = 'Schätzung abgeben'; }
+        const hint = document.getElementById('submitHint');
+        if (hint) hint.textContent = 'Schieberegler anpassen und nochmal versuchen';
+      });
       return;
     }
     // Richtig: Visualisierung für 10 Sekunden zeigen
@@ -753,10 +765,13 @@ function startRetryTimer(chapter, seconds, onExpire) {
     } else {
       clearInterval(timer);
       delete btn.dataset.timerActive;
-      if (onExpire) onExpire();
-      const hint = document.getElementById('submitHint');
-      if (hint) hint.textContent = 'Versuche es nochmal!';
-      renderTaskUI(chapter.task, true);
+      if (onExpire) {
+        onExpire();
+      } else {
+        const hint = document.getElementById('submitHint');
+        if (hint) hint.textContent = 'Versuche es nochmal!';
+        renderTaskUI(chapter.task, true);
+      }
     }
   }, 1000);
 }
