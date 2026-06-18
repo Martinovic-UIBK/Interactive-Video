@@ -29,6 +29,17 @@
 //      items:    ["Item 1", "Item 2", "Item 3"]  ← IN RICHTIGER REIHENFOLGE!
 //      feedback: "Erklärung der richtigen Reihenfolge."
 //
+// ── type: 'estimate' ────────────────────────────────────────
+//    Schätzfrage mit Schieberegler.
+//      question:   "Wie hoch/weit/groß ist...?"
+//      unit:       "Meter"         ← Einheit die angezeigt wird
+//      min:        0               ← Minimalwert des Schiebereglers
+//      max:        200             ← Maximalwert des Schiebereglers
+//      step:       1               ← Schrittgröße (1 = ganzzahlig)
+//      correct:    56              ← Die richtige Antwort
+//      tolerance:  5               ← Toleranz: ±5 Meter gilt als richtig
+//      feedback:   "Die genaue Antwort ist 56 Meter, weil..."
+//
 // ============================================================
 
 const STATIONS = [
@@ -80,15 +91,15 @@ const STATIONS = [
     youtubeId: "REPLACE_ME_03",
     icon: "🗼",
     task: {
-      type: "sort",
-      question: "Bringe diese Aussagen über den Stadtturm in die richtige Reihenfolge – vom ältesten zum neuesten Ereignis:",
-      items: [
-        "Der Stadtturm wird im 14. Jahrhundert als Wachturm erbaut",
-        "Der Turm dient als Feuerwache – Wächter halten Ausschau nach Bränden",
-        "Der Turm wird für Besucher geöffnet – 148 Stufen auf 56 Meter Höhe",
-        "Heute genießen Touristen den 360°-Panoramablick über Innsbruck"
-      ],
-      feedback: "Richtig! Der Turm wurde zuerst als Wachturm gebaut, dann als Feuerwache genutzt, später für Besucher geöffnet und ist heute ein beliebter Aussichtspunkt."
+      type: "estimate",
+      question: "Wie hoch ist der Innsbrucker Stadtturm?",
+      unit: "Meter",
+      min: 10,
+      max: 150,
+      step: 1,
+      correct: 56,
+      tolerance: 5,
+      feedback: "Der Stadtturm ist genau 56 Meter hoch! Um nach oben zu gelangen, muss man 148 Stufen erklimmen – aber der Panoramablick über Innsbruck ist die Mühe wert."
     }
   },
   {
@@ -171,9 +182,15 @@ const STATIONS = [
     youtubeId: "REPLACE_ME_08",
     icon: "🏔️",
     task: {
-      type: "open",
-      question: "Was ist das Besondere an den Stationen der Nordkettenbahn und auf welche Höhe gelangt man?",
-      keyInfo: "Stationen von Stararchitektin Zaha Hadid entworfen, futuristische Glasdächer, Stationen Hungerburg, Seegrube, Hafelekar auf 2334 Meter, Blick auf Innsbruck und Alpen"
+      type: "estimate",
+      question: "Auf welche Höhe gelangt man mit der Nordkettenbahn bis zur Endstation Hafelekar?",
+      unit: "Meter über dem Meeresspiegel",
+      min: 500,
+      max: 4000,
+      step: 10,
+      correct: 2334,
+      tolerance: 100,
+      feedback: "Die Endstation Hafelekar liegt auf 2.334 Metern! Von dort hat man einen atemberaubenden Blick auf Innsbruck und die gesamten Alpen."
     }
   },
   {

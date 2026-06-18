@@ -111,8 +111,8 @@ function renderStations() {
     const completed = isStationCompleted(station.id);
     const taskType  = station.task?.type || 'open';
 
-    const typeLabels = { single: 'Einfachauswahl', multiple: 'Mehrfachauswahl', open: 'Offene Frage', sort: 'Sortieraufgabe' };
-    const typeIcons  = { single: '🔘', multiple: '☑️', open: '✏️', sort: '↕️' };
+    const typeLabels = { single: 'Einfachauswahl', multiple: 'Mehrfachauswahl', open: 'Offene Frage', sort: 'Sortieraufgabe', estimate: 'Schätzfrage' };
+    const typeIcons  = { single: '🔘', multiple: '☑️', open: '✏️', sort: '↕️', estimate: '🎯' };
 
     const card = document.createElement('div');
     card.className = `station-card ${completed ? 'completed' : unlocked ? 'unlocked' : 'locked'}`;
@@ -161,7 +161,7 @@ function openModal(station) {
   document.getElementById('modalSubtitle').textContent = station.subtitle;
   document.getElementById('modalLocation').textContent = '📍 ' + station.location;
 
-  const typeLabels = { single: '🔘 Einfachauswahl', multiple: '☑️ Mehrfachauswahl', open: '✏️ Offene Frage', sort: '↕️ Sortieraufgabe' };
+  const typeLabels = { single: '🔘 Einfachauswahl', multiple: '☑️ Mehrfachauswahl', open: '✏️ Offene Frage', sort: '↕️ Sortieraufgabe', estimate: '🎯 Schätzfrage' };
   document.getElementById('questionTypeLabel').textContent = typeLabels[station.task?.type] || '✏️ Aufgabe';
   document.getElementById('questionText').textContent      = station.task?.question || '';
 
@@ -295,6 +295,52 @@ function renderTaskUI(station, completed, progress) {
     `;
     renderSortList(task, isEnabled);
     document.getElementById('submitBtn').addEventListener('click', submitTask);
+
+  } else if (task.type === 'estimate') {
+    const midVal = Math.round((task.min + task.max) / 2);
+    container.innerHTML = `
+      <div class="estimate-wrapper">
+        <div class="estimate-display">
+          <span class="estimate-value" id="estimateValue">${midVal}</span>
+          <span class="estimate-unit">${task.unit}</span>
+        </div>
+        <div class="estimate-slider-row">
+          <span class="estimate-bound">${task.min}</span>
+          <input type="range" class="estimate-slider" id="estimateSlider"
+            min="${task.min}" max="${task.max}" step="${task.step}" value="${midVal}"
+            ${isEnabled ? '' : 'disabled'} />
+          <span class="estimate-bound">${task.max}</span>
+        </div>
+        <div class="estimate-result-track" id="estimateResultTrack" style="display:none">
+          <div class="estimate-result-bar" id="estimateResultBar"></div>
+          <div class="estimate-marker estimate-marker-user"  id="markerUser"  title="Deine Schätzung"></div>
+          <div class="estimate-marker estimate-marker-correct" id="markerCorrect" title="Richtige Antwort"></div>
+        </div>
+        <div class="estimate-legend" id="estimateLegend" style="display:none">
+          <span class="legend-user">⬤ Deine Schätzung</span>
+          <span class="legend-correct">⬤ Richtige Antwort</span>
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="btn-submit" id="submitBtn" ${isEnabled ? '' : 'disabled'}>
+          <span id="submitBtnText">Schätzung abgeben</span>
+        </button>
+        <span class="submit-hint" id="submitHint">${isEnabled ? 'Schieberegler einstellen' : 'Zuerst Video fertig schauen'}</span>
+      </div>
+      <div class="feedback-box" id="feedbackBox">
+        <div class="feedback-header" id="feedbackHeader"></div>
+        <div class="feedback-text"  id="feedbackText"></div>
+      </div>
+    `;
+
+    const slider = document.getElementById('estimateSlider');
+    const valDisplay = document.getElementById('estimateValue');
+    slider.addEventListener('input', () => {
+      valDisplay.textContent = Number(slider.value).toLocaleString('de-AT');
+    });
+    // Initialwert formatieren
+    valDisplay.textContent = Number(midVal).toLocaleString('de-AT');
+    document.getElementById('submitBtn').addEventListener('click', submitTask);
   }
 }
 
@@ -365,6 +411,12 @@ function enableTaskInput() {
     document.getElementById('submitBtn').disabled = false;
     document.getElementById('submitHint').textContent = 'Verschiebe die Items mit ▲ ▼';
     renderSortList(task, true);
+
+  } else if (task.type === 'estimate') {
+    const slider = document.getElementById('estimateSlider');
+    if (slider) slider.disabled = false;
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitHint').textContent = 'Schieberegler einstellen';
   }
 }
 
@@ -424,9 +476,46 @@ function submitClientSide(task) {
       el.classList.add(sortOrder[pos] === pos ? 'sort-correct' : 'sort-wrong');
     });
     document.querySelectorAll('.sort-btn').forEach(b => b.disabled = true);
+
+  } else if (task.type === 'estimate') {
+    const slider   = document.getElementById('estimateSlider');
+    const guessed  = Number(slider.value);
+    const diff     = Math.abs(guessed - task.correct);
+    isCorrect      = diff <= task.tolerance;
+    answerText     = `${guessed} ${task.unit}`;
+
+    // Schieberegler deaktivieren
+    slider.disabled = true;
+
+    // Visuelle Auswertung: Marker auf dem Track anzeigen
+    const track = document.getElementById('estimateResultTrack');
+    const bar   = document.getElementById('estimateResultBar');
+    track.style.display = 'block';
+    document.getElementById('estimateLegend').style.display = 'flex';
+
+    const range       = task.max - task.min;
+    const userPct     = ((guessed    - task.min) / range) * 100;
+    const correctPct  = ((task.correct - task.min) / range) * 100;
+
+    bar.style.setProperty('--user-pct',    `${userPct}%`);
+    bar.style.setProperty('--correct-pct', `${correctPct}%`);
+
+    document.getElementById('markerUser').style.left    = `${userPct}%`;
+    document.getElementById('markerCorrect').style.left = `${correctPct}%`;
+
+    const diffText = diff === 0
+      ? 'Exakt getroffen! 🎯'
+      : `${diff} ${task.unit} daneben`;
+    answerText = `${guessed.toLocaleString('de-AT')} ${task.unit} (${diffText})`;
   }
 
-  showFeedback(isCorrect, isCorrect ? task.feedback : '❌ Noch nicht ganz richtig – schau dir die markierten Elemente an und versuche es nochmal!');
+  let feedbackText = isCorrect ? task.feedback : '❌ Noch nicht ganz – schau dir die markierten Elemente an und versuche es nochmal!';
+  if (task.type === 'estimate' && !isCorrect) {
+    const diff = Math.abs(Number(document.getElementById('estimateSlider').value) - task.correct);
+    feedbackText = `Knapp daneben! Du lagst ${diff} ${task.unit} neben der richtigen Antwort. ${task.feedback}`;
+  }
+
+  showFeedback(isCorrect, feedbackText);
 
   if (isCorrect) {
     submitBtn.disabled = true;
@@ -437,6 +526,13 @@ function submitClientSide(task) {
     submitBtn.textContent = 'Nochmal versuchen';
     if (task.type === 'sort') {
       setTimeout(() => renderTaskUI(currentStation, false, null), 1500);
+    }
+    if (task.type === 'estimate') {
+      // Slider bleibt sichtbar, aber Button reset
+      submitBtn.disabled = false;
+      document.getElementById('estimateSlider').disabled = false;
+      document.getElementById('estimateResultTrack').style.display = 'none';
+      document.getElementById('estimateLegend').style.display = 'none';
     }
   }
 }
