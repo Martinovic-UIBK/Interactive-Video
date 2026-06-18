@@ -1,5 +1,5 @@
 // ============================================================
-// app.js – Innsbruck Lernplattform
+// app.js – Innsbruck Lernplattform (Chapter-Video-Modus)
 // ============================================================
 
 const BACKEND_URL = (() => {
@@ -10,29 +10,32 @@ const BACKEND_URL = (() => {
 })();
 
 // ===========================
-// Auth-Check
+// Auth
 // ===========================
 const token   = localStorage.getItem('ibk_token');
 const userRaw = localStorage.getItem('ibk_user');
-
-if (!token || !userRaw) {
-  window.location.href = 'login.html';
-  throw new Error('Not authenticated');
-}
-
+if (!token || !userRaw) { window.location.href = 'login.html'; throw new Error('Not authenticated'); }
 const currentUser = JSON.parse(userRaw);
 
 // ===========================
 // State
 // ===========================
-let progressMap    = {};
-let ytApiReady     = false;
-let ytPlayer       = null;
-let currentStation = null;
-let videoWatched   = false;
-let sortOrder      = [];
+let progressMap       = {};   // { chapterId: progressRow }
+let ytPlayer          = null;
+let ytApiReady        = false;
+let pollInterval      = null;
+let questionActive    = false;     // Frage gerade sichtbar?
+let nextChapterIndex  = 0;         // Index des nächsten noch nicht gezeigten Kapitels
+let sortOrder         = [];
 
-window.onYouTubeIframeAPIReady = () => { ytApiReady = true; };
+window.onYouTubeIframeAPIReady = () => {
+  ytApiReady = true;
+  // Falls Autostart-Button bereits geklickt wurde
+  if (window._pendingPlayerInit) {
+    window._pendingPlayerInit();
+    window._pendingPlayerInit = null;
+  }
+};
 
 // ===========================
 // Hilfsfunktionen
@@ -41,49 +44,39 @@ window.onYouTubeIframeAPIReady = () => { ytApiReady = true; };
 function authHeaders() {
   return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 }
-
 function logout() {
   localStorage.removeItem('ibk_token');
   localStorage.removeItem('ibk_user');
   window.location.href = 'login.html';
 }
-
-function showToast(message, type = 'info', duration = 4000) {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add('fadeout');
-    toast.addEventListener('animationend', () => toast.remove());
-  }, duration);
+function showToast(msg, type = 'info', dur = 4000) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${{success:'✅',error:'❌',info:'ℹ️'}[type]||'ℹ️'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.classList.add('fadeout'); t.addEventListener('animationend', () => t.remove()); }, dur);
 }
+
+// ===========================
+// Fortschritt
+// ===========================
 
 function getCompletedCount() {
-  return STATIONS.filter(s => progressMap[s.id]?.is_correct).length;
+  return LESSON.chapters.filter(ch => progressMap[ch.id]?.is_correct).length;
 }
 
-function isStationUnlocked(stationId) {
-  if (stationId === 1) return true;
-  const prev = progressMap[stationId - 1];
-  return prev && prev.video_watched && prev.is_correct;
-}
-
-function isStationCompleted(stationId) {
-  return !!progressMap[stationId]?.is_correct;
+function isChapterCompleted(chapterId) {
+  return !!progressMap[chapterId]?.is_correct;
 }
 
 function updateProgressUI() {
-  const done = getCompletedCount();
-  document.getElementById('progressCount').textContent = `${done} / ${STATIONS.length}`;
-  document.getElementById('progressBar').style.width   = `${Math.round((done / STATIONS.length) * 100)}%`;
+  const done  = getCompletedCount();
+  const total = LESSON.chapters.length;
+  document.getElementById('progressCount').textContent = `${done} / ${total}`;
+  document.getElementById('progressBar').style.width   = `${Math.round((done / total) * 100)}%`;
+  renderChapterDots();
 }
-
-// ===========================
-// Fortschritt laden
-// ===========================
 
 async function loadProgress() {
   try {
@@ -98,202 +91,288 @@ async function loadProgress() {
   }
 }
 
-// ===========================
-// Karten rendern
-// ===========================
+async function saveProgressClientSide(chapterId, answerText, feedback) {
+  try {
+    await fetch(`${BACKEND_URL}/api/progress/complete/${chapterId}`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ answerText, feedback })
+    });
+    progressMap[chapterId] = {
+      station_number: chapterId, video_watched: true,
+      answer_text: answerText, is_correct: true, feedback
+    };
+    updateProgressUI();
+  } catch (_) {}
+}
 
-function renderStations() {
-  const grid = document.getElementById('stationsGrid');
-  grid.innerHTML = '';
-
-  STATIONS.forEach(station => {
-    const unlocked  = isStationUnlocked(station.id);
-    const completed = isStationCompleted(station.id);
-    const taskType  = station.task?.type || 'open';
-
-    const typeLabels = { single: 'Einfachauswahl', multiple: 'Mehrfachauswahl', open: 'Offene Frage', sort: 'Sortieraufgabe', estimate: 'Schätzfrage' };
-    const typeIcons  = { single: '🔘', multiple: '☑️', open: '✏️', sort: '↕️', estimate: '🎯' };
-
-    const card = document.createElement('div');
-    card.className = `station-card ${completed ? 'completed' : unlocked ? 'unlocked' : 'locked'}`;
-    card.dataset.id = station.id;
-
-    let statusText = '🔒 Gesperrt';
-    let dotClass   = 'locked';
-    if (completed) { statusText = '✅ Abgeschlossen'; dotClass = 'completed'; }
-    else if (unlocked) { statusText = '▶️ Jetzt starten'; dotClass = 'unlocked'; }
-
-    card.innerHTML = `
-      <div class="station-card-header">
-        <div class="station-icon-wrapper">${station.icon}</div>
-        <span class="station-number">#${station.id}</span>
-      </div>
-      <div class="station-title">${station.title}</div>
-      <div class="station-subtitle">${station.subtitle}</div>
-      <div class="station-location">📍 ${station.location}</div>
-      <div class="task-type-badge">
-        <span>${typeIcons[taskType]}</span> ${typeLabels[taskType]}
-      </div>
-      <div class="station-status">
-        <span class="status-dot ${dotClass}"></span>
-        <span class="status-text ${dotClass}">${statusText}</span>
-      </div>
-    `;
-
-    if (unlocked || completed) card.addEventListener('click', () => openModal(station));
-    grid.appendChild(card);
-  });
-
-  updateProgressUI();
+async function saveVideoWatched(chapterId) {
+  try {
+    await fetch(`${BACKEND_URL}/api/progress/video-watched/${chapterId}`, {
+      method: 'POST', headers: authHeaders()
+    });
+  } catch (_) {}
 }
 
 // ===========================
-// Modal öffnen
+// Kapitel-Dots rendern
 // ===========================
 
-function openModal(station) {
-  currentStation = station;
-  videoWatched   = false;
-  sortOrder      = [];
-
-  document.getElementById('modalIcon').textContent     = station.icon;
-  document.getElementById('modalTitle').textContent    = station.title;
-  document.getElementById('modalSubtitle').textContent = station.subtitle;
-  document.getElementById('modalLocation').textContent = '📍 ' + station.location;
-
-  const typeLabels = { single: '🔘 Einfachauswahl', multiple: '☑️ Mehrfachauswahl', open: '✏️ Offene Frage', sort: '↕️ Sortieraufgabe', estimate: '🎯 Schätzfrage' };
-  document.getElementById('questionTypeLabel').textContent = typeLabels[station.task?.type] || '✏️ Aufgabe';
-  document.getElementById('questionText').textContent      = station.task?.question || '';
-
-  const completed = isStationCompleted(station.id);
-  const progress  = progressMap[station.id];
-
-  const hint = document.getElementById('videoHint');
-  if (completed) {
-    hint.textContent = '✅ Video bereits angesehen.';
-    hint.className   = 'video-hint video-done';
-  } else {
-    hint.textContent = '⏳ Schau das Video vollständig an, um die Aufgabe zu aktivieren.';
-    hint.className   = 'video-hint';
-    if (progress?.video_watched) videoWatched = true;
-  }
-
-  renderTaskUI(station, completed, progress);
-
-  document.getElementById('modalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => initYTPlayer(station.youtubeId), 100);
-}
-
-// ===========================
-// Aufgaben-UI rendern
-// ===========================
-
-function renderTaskUI(station, completed, progress) {
-  const container = document.getElementById('taskContainer');
+function renderChapterDots() {
+  const container = document.getElementById('chapterDots');
   container.innerHTML = '';
 
-  // Abgeschlossene Station: Read-only Ansicht
+  LESSON.chapters.forEach((ch, idx) => {
+    const done = isChapterCompleted(ch.id);
+    const dot  = document.createElement('div');
+    dot.className = `chapter-dot ${done ? 'dot-done' : idx === nextChapterIndex ? 'dot-next' : 'dot-pending'}`;
+    dot.title     = `${ch.icon} ${ch.title}${done ? ' ✅' : ''}`;
+    dot.innerHTML = done ? '✓' : `${idx + 1}`;
+    container.appendChild(dot);
+  });
+}
+
+// ===========================
+// Nächsten offenen Kapitel-Index ermitteln
+// ===========================
+
+function calcNextChapterIndex() {
+  for (let i = 0; i < LESSON.chapters.length; i++) {
+    if (!isChapterCompleted(LESSON.chapters[i].id)) {
+      return i;
+    }
+  }
+  return LESSON.chapters.length; // alle fertig
+}
+
+// ===========================
+// YouTube Player initialisieren
+// ===========================
+
+function initPlayer() {
+  const tryInit = () => {
+    if (!ytApiReady || typeof YT === 'undefined' || !YT.Player) {
+      window._pendingPlayerInit = tryInit;
+      return;
+    }
+
+    // Startzeit: beim ersten noch nicht abgeschlossenen Kapitel beginnen
+    const startChapter = LESSON.chapters[nextChapterIndex];
+    const startSeconds = startChapter
+      ? Math.max(0, startChapter.pauseAt - 30)
+      : 0;
+
+    ytPlayer = new YT.Player('yt-player', {
+      videoId:     LESSON.youtubeId,
+      playerVars:  { rel: 0, modestbranding: 1, playsinline: 1, start: startSeconds },
+      events: {
+        onReady:       onPlayerReady,
+        onStateChange: onPlayerStateChange
+      }
+    });
+  };
+  tryInit();
+}
+
+function onPlayerReady() {
+  // Overlay ausblenden sobald Player geladen ist
+  document.getElementById('videoStartOverlay').style.display = 'none';
+  ytPlayer.playVideo();
+  startPolling();
+}
+
+function onPlayerStateChange(event) {
+  // YT.PlayerState: PLAYING=1, PAUSED=2, ENDED=0
+  if (event.data === 1) startPolling();
+  if (event.data === 2 || event.data === 0) stopPolling();
+  if (event.data === 0) onVideoEnded();
+}
+
+// ===========================
+// Polling – erkennt Kapitel-Zeitstempel
+// ===========================
+
+function startPolling() {
+  if (pollInterval) return;
+  pollInterval = setInterval(() => {
+    if (!ytPlayer || questionActive) return;
+
+    const chapter = LESSON.chapters[nextChapterIndex];
+    if (!chapter) { stopPolling(); return; }
+
+    const time = ytPlayer.getCurrentTime();
+    if (time >= chapter.pauseAt) {
+      ytPlayer.pauseVideo();
+      stopPolling();
+      onChapterReached(chapter);
+    }
+  }, 400);
+}
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+// ===========================
+// Kapitel erreicht → Frage zeigen
+// ===========================
+
+function onChapterReached(chapter) {
+  questionActive = true;
+  saveVideoWatched(chapter.id);
+
+  const completed = isChapterCompleted(chapter.id);
+  const progress  = progressMap[chapter.id];
+
+  // Kapitel-Badge setzen
+  document.getElementById('panelChapterIcon').textContent = chapter.icon;
+  document.getElementById('panelChapterNum').textContent  = `Kapitel ${chapter.id} – ${chapter.title}`;
+
+  // Typ-Label
+  const typeLabels = { single:'🔘 Einfachauswahl', multiple:'☑️ Mehrfachauswahl', open:'✏️ Offene Frage', sort:'↕️ Sortieraufgabe', estimate:'🎯 Schätzfrage' };
+  document.getElementById('panelQuestionType').textContent = typeLabels[chapter.task?.type] || '✏️ Aufgabe';
+  document.getElementById('panelQuestionText').textContent = chapter.task?.question || '';
+
+  // Panels umschalten
+  document.getElementById('panelWaiting').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.add('hidden');
+
   if (completed && progress) {
-    container.innerHTML = `
-      <div class="feedback-box correct visible">
-        <div class="feedback-header correct">✅ Station abgeschlossen!</div>
-        <div class="feedback-text">${progress.feedback || ''}</div>
-      </div>
-      ${progress.answer_text ? `
-        <div class="completed-answer-box">
-          <div class="completed-answer-label">Deine Antwort</div>
-          <div class="completed-answer-text">${progress.answer_text}</div>
-        </div>` : ''}
+    showCompletedPanel(chapter, progress);
+  } else {
+    document.getElementById('panelQuestion').classList.remove('hidden');
+    renderTaskUI(chapter.task, true);
+  }
+}
+
+function showCompletedPanel(chapter, progress) {
+  document.getElementById('panelQuestion').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.remove('hidden');
+  document.getElementById('completedTitle').textContent    = `✅ ${chapter.title} – bereits beantwortet`;
+  document.getElementById('completedFeedback').textContent = progress.feedback || '';
+
+  document.getElementById('btnContinue').onclick = () => {
+    continueVideo();
+  };
+}
+
+// ===========================
+// Video fortsetzen
+// ===========================
+
+function continueVideo() {
+  questionActive = false;
+  nextChapterIndex = calcNextChapterIndex();
+  updateProgressUI();
+
+  document.getElementById('panelQuestion').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.add('hidden');
+  document.getElementById('panelWaiting').classList.remove('hidden');
+
+  if (nextChapterIndex >= LESSON.chapters.length) {
+    document.getElementById('panelWaiting').innerHTML = `
+      <div class="waiting-icon">🏆</div>
+      <p class="waiting-text">Herzlichen Glückwunsch! Du hast alle ${LESSON.chapters.length} Kapitel abgeschlossen!</p>
     `;
     return;
   }
 
-  const task      = station.task;
-  const isEnabled = videoWatched;
+  ytPlayer.playVideo();
+  startPolling();
+}
+
+function onVideoEnded() {
+  stopPolling();
+  document.getElementById('panelWaiting').innerHTML = `
+    <div class="waiting-icon">🎬</div>
+    <p class="waiting-text">Video zu Ende! ${getCompletedCount() < LESSON.chapters.length ? 'Noch nicht alle Fragen beantwortet – spule zum nächsten Kapitel zurück.' : '🏆 Alle Kapitel abgeschlossen!'}</p>
+  `;
+  document.getElementById('panelWaiting').classList.remove('hidden');
+  document.getElementById('panelQuestion').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.add('hidden');
+}
+
+// ===========================
+// Aufgaben-UI rendern (identisch mit vorheriger Version)
+// ===========================
+
+function renderTaskUI(task, isEnabled) {
+  const container = document.getElementById('taskContainer');
+  container.innerHTML = '';
+  sortOrder = [];
 
   if (task.type === 'open') {
     container.innerHTML = `
       <textarea class="answer-textarea" id="answerInput"
-        placeholder="Schreibe hier deine Antwort…" rows="4"
-        ${isEnabled ? '' : 'disabled'}></textarea>
+        placeholder="Schreibe hier deine Antwort…" rows="4"></textarea>
       <div class="submit-row">
         <button class="btn-submit" id="submitBtn" disabled>
           <span id="submitBtnText">Antwort senden</span>
         </button>
-        <span class="submit-hint" id="submitHint">${isEnabled ? 'Mindestens 1 Wort eingeben' : 'Zuerst Video fertig schauen'}</span>
+        <span class="submit-hint" id="submitHint">Mindestens 1 Wort eingeben</span>
       </div>
       <div class="feedback-box" id="feedbackBox">
         <div class="feedback-header" id="feedbackHeader"></div>
         <div class="feedback-text"  id="feedbackText"></div>
       </div>
     `;
-    if (isEnabled) {
-      const ta = document.getElementById('answerInput');
-      ta.addEventListener('input', () => {
-        document.getElementById('submitBtn').disabled = ta.value.trim().length === 0;
-      });
-      ta.focus();
-    }
-    document.getElementById('submitBtn').addEventListener('click', submitTask);
-    document.getElementById('answerInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitTask(); }
+    const ta = document.getElementById('answerInput');
+    ta.focus();
+    ta.addEventListener('input', () => {
+      document.getElementById('submitBtn').disabled = ta.value.trim().length === 0;
     });
+    document.getElementById('submitBtn').addEventListener('click', submitTask);
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitTask(); } });
 
   } else if (task.type === 'single' || task.type === 'multiple') {
-    const isMultiple = task.type === 'multiple';
+    const isMulti = task.type === 'multiple';
     const opts = task.options.map((opt, i) => `
-      <label class="choice-option ${isMultiple ? 'choice-checkbox' : ''} ${isEnabled ? '' : 'choice-disabled'}" data-index="${i}">
-        <span class="${isMultiple ? 'choice-check' : 'choice-radio'}"></span>
+      <label class="choice-option ${isMulti ? 'choice-checkbox' : ''}" data-index="${i}">
+        <span class="${isMulti ? 'choice-check' : 'choice-radio'}"></span>
         <span class="choice-text">${opt}</span>
       </label>
     `).join('');
-
     container.innerHTML = `
-      <div class="choice-list" id="choiceList">${opts}</div>
+      <div class="choice-list">${opts}</div>
       <div class="submit-row">
         <button class="btn-submit" id="submitBtn" disabled>
           <span id="submitBtnText">Überprüfen</span>
         </button>
-        <span class="submit-hint" id="submitHint">${isEnabled ? (isMultiple ? 'Wähle alle richtigen Antworten' : 'Wähle eine Antwort') : 'Zuerst Video fertig schauen'}</span>
+        <span class="submit-hint" id="submitHint">${isMulti ? 'Alle richtigen Antworten wählen' : 'Eine Antwort wählen'}</span>
       </div>
       <div class="feedback-box" id="feedbackBox">
         <div class="feedback-header" id="feedbackHeader"></div>
         <div class="feedback-text"  id="feedbackText"></div>
       </div>
     `;
-    if (isEnabled) {
-      document.querySelectorAll('.choice-option').forEach(el => {
-        el.addEventListener('click', () => {
-          if (!isMultiple) document.querySelectorAll('.choice-option').forEach(o => o.classList.remove('selected'));
-          el.classList.toggle('selected');
-          const any = document.querySelectorAll('.choice-option.selected').length > 0;
-          document.getElementById('submitBtn').disabled = !any;
-          if (any) document.getElementById('submitHint').textContent = '';
-        });
+    document.querySelectorAll('.choice-option').forEach(el => {
+      el.addEventListener('click', () => {
+        if (!isMulti) document.querySelectorAll('.choice-option').forEach(o => o.classList.remove('selected'));
+        el.classList.toggle('selected');
+        document.getElementById('submitBtn').disabled =
+          document.querySelectorAll('.choice-option.selected').length === 0;
+        document.getElementById('submitHint').textContent = '';
       });
-    }
+    });
     document.getElementById('submitBtn').addEventListener('click', submitTask);
 
   } else if (task.type === 'sort') {
-    // Startreihenfolge: um eine Position rotiert (immer anders als Lösung)
     sortOrder = task.items.map((_, i) => i);
     sortOrder = [...sortOrder.slice(1), sortOrder[0]];
 
     container.innerHTML = `
       <div class="sort-list" id="sortList"></div>
       <div class="submit-row" style="margin-top:14px">
-        <button class="btn-submit" id="submitBtn" ${isEnabled ? '' : 'disabled'}>
+        <button class="btn-submit" id="submitBtn">
           <span id="submitBtnText">Reihenfolge prüfen</span>
         </button>
-        <span class="submit-hint" id="submitHint">${isEnabled ? 'Verschiebe die Items mit ▲ ▼' : 'Zuerst Video fertig schauen'}</span>
+        <span class="submit-hint" id="submitHint">Mit ▲ ▼ sortieren</span>
       </div>
       <div class="feedback-box" id="feedbackBox">
         <div class="feedback-header" id="feedbackHeader"></div>
         <div class="feedback-text"  id="feedbackText"></div>
       </div>
     `;
-    renderSortList(task, isEnabled);
+    renderSortList(task, true);
     document.getElementById('submitBtn').addEventListener('click', submitTask);
 
   } else if (task.type === 'estimate') {
@@ -301,20 +380,19 @@ function renderTaskUI(station, completed, progress) {
     container.innerHTML = `
       <div class="estimate-wrapper">
         <div class="estimate-display">
-          <span class="estimate-value" id="estimateValue">${midVal}</span>
+          <span class="estimate-value" id="estimateValue">${midVal.toLocaleString('de-AT')}</span>
           <span class="estimate-unit">${task.unit}</span>
         </div>
         <div class="estimate-slider-row">
-          <span class="estimate-bound">${task.min}</span>
+          <span class="estimate-bound">${task.min.toLocaleString('de-AT')}</span>
           <input type="range" class="estimate-slider" id="estimateSlider"
-            min="${task.min}" max="${task.max}" step="${task.step}" value="${midVal}"
-            ${isEnabled ? '' : 'disabled'} />
-          <span class="estimate-bound">${task.max}</span>
+            min="${task.min}" max="${task.max}" step="${task.step}" value="${midVal}" />
+          <span class="estimate-bound">${task.max.toLocaleString('de-AT')}</span>
         </div>
         <div class="estimate-result-track" id="estimateResultTrack" style="display:none">
           <div class="estimate-result-bar" id="estimateResultBar"></div>
-          <div class="estimate-marker estimate-marker-user"  id="markerUser"  title="Deine Schätzung"></div>
-          <div class="estimate-marker estimate-marker-correct" id="markerCorrect" title="Richtige Antwort"></div>
+          <div class="estimate-marker estimate-marker-user"    id="markerUser"></div>
+          <div class="estimate-marker estimate-marker-correct" id="markerCorrect"></div>
         </div>
         <div class="estimate-legend" id="estimateLegend" style="display:none">
           <span class="legend-user">⬤ Deine Schätzung</span>
@@ -322,33 +400,28 @@ function renderTaskUI(station, completed, progress) {
         </div>
       </div>
       <div class="submit-row">
-        <button class="btn-submit" id="submitBtn" ${isEnabled ? '' : 'disabled'}>
+        <button class="btn-submit" id="submitBtn">
           <span id="submitBtnText">Schätzung abgeben</span>
         </button>
-        <span class="submit-hint" id="submitHint">${isEnabled ? 'Schieberegler einstellen' : 'Zuerst Video fertig schauen'}</span>
+        <span class="submit-hint" id="submitHint">Schieberegler einstellen</span>
       </div>
       <div class="feedback-box" id="feedbackBox">
         <div class="feedback-header" id="feedbackHeader"></div>
         <div class="feedback-text"  id="feedbackText"></div>
       </div>
     `;
-
-    const slider = document.getElementById('estimateSlider');
-    const valDisplay = document.getElementById('estimateValue');
-    slider.addEventListener('input', () => {
-      valDisplay.textContent = Number(slider.value).toLocaleString('de-AT');
+    document.getElementById('estimateSlider').addEventListener('input', e => {
+      document.getElementById('estimateValue').textContent = Number(e.target.value).toLocaleString('de-AT');
     });
-    // Initialwert formatieren
-    valDisplay.textContent = Number(midVal).toLocaleString('de-AT');
     document.getElementById('submitBtn').addEventListener('click', submitTask);
   }
 }
 
-function renderSortList(task, isEnabled) {
+function renderSortList(task, enabled) {
   const list = document.getElementById('sortList');
   if (!list) return;
   list.innerHTML = sortOrder.map((origIdx, pos) => `
-    <div class="sort-item ${isEnabled ? '' : 'sort-disabled'}" data-pos="${pos}">
+    <div class="sort-item" data-pos="${pos}">
       <div class="sort-handle">
         <button class="sort-btn" data-dir="up"   data-pos="${pos}" ${pos === 0 ? 'disabled' : ''}>▲</button>
         <button class="sort-btn" data-dir="down" data-pos="${pos}" ${pos === sortOrder.length - 1 ? 'disabled' : ''}>▼</button>
@@ -357,67 +430,17 @@ function renderSortList(task, isEnabled) {
     </div>
   `).join('');
 
-  if (isEnabled) {
-    list.querySelectorAll('.sort-btn').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        const pos = parseInt(btn.dataset.pos, 10);
-        const dir = btn.dataset.dir;
-        if (dir === 'up' && pos > 0)
-          [sortOrder[pos], sortOrder[pos - 1]] = [sortOrder[pos - 1], sortOrder[pos]];
-        else if (dir === 'down' && pos < sortOrder.length - 1)
-          [sortOrder[pos], sortOrder[pos + 1]] = [sortOrder[pos + 1], sortOrder[pos]];
-        renderSortList(currentStation.task, true);
-      });
+  list.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const pos = parseInt(btn.dataset.pos, 10);
+      if (btn.dataset.dir === 'up' && pos > 0)
+        [sortOrder[pos], sortOrder[pos-1]] = [sortOrder[pos-1], sortOrder[pos]];
+      else if (btn.dataset.dir === 'down' && pos < sortOrder.length - 1)
+        [sortOrder[pos], sortOrder[pos+1]] = [sortOrder[pos+1], sortOrder[pos]];
+      renderSortList(task, true);
     });
-  }
-}
-
-// ===========================
-// Input nach Video aktivieren
-// ===========================
-
-function enableTaskInput() {
-  if (!currentStation) return;
-  const task = currentStation.task;
-
-  if (task.type === 'open') {
-    const ta = document.getElementById('answerInput');
-    if (ta) {
-      ta.disabled = false;
-      ta.focus();
-      ta.addEventListener('input', () => {
-        document.getElementById('submitBtn').disabled = ta.value.trim().length === 0;
-      });
-    }
-    document.getElementById('submitHint').textContent = 'Mindestens 1 Wort eingeben';
-
-  } else if (task.type === 'single' || task.type === 'multiple') {
-    const isMultiple = task.type === 'multiple';
-    document.querySelectorAll('.choice-option').forEach(el => {
-      el.classList.remove('choice-disabled');
-      el.addEventListener('click', () => {
-        if (!isMultiple) document.querySelectorAll('.choice-option').forEach(o => o.classList.remove('selected'));
-        el.classList.toggle('selected');
-        const any = document.querySelectorAll('.choice-option.selected').length > 0;
-        document.getElementById('submitBtn').disabled = !any;
-        if (any) document.getElementById('submitHint').textContent = '';
-      });
-    });
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('submitHint').textContent = isMultiple ? 'Wähle alle richtigen Antworten' : 'Wähle eine Antwort';
-
-  } else if (task.type === 'sort') {
-    document.getElementById('submitBtn').disabled = false;
-    document.getElementById('submitHint').textContent = 'Verschiebe die Items mit ▲ ▼';
-    renderSortList(task, true);
-
-  } else if (task.type === 'estimate') {
-    const slider = document.getElementById('estimateSlider');
-    if (slider) slider.disabled = false;
-    document.getElementById('submitBtn').disabled = false;
-    document.getElementById('submitHint').textContent = 'Schieberegler einstellen';
-  }
+  });
 }
 
 // ===========================
@@ -425,28 +448,29 @@ function enableTaskInput() {
 // ===========================
 
 async function submitTask() {
-  if (!currentStation) return;
+  const chapter = LESSON.chapters[nextChapterIndex];
+  if (!chapter) return;
   const submitBtn = document.getElementById('submitBtn');
-  if (!submitBtn || submitBtn.disabled) return;
+  if (submitBtn?.disabled) return;
 
-  const task = currentStation.task;
-  if (task.type === 'open') {
-    await submitOpenQuestion();
+  if (chapter.task.type === 'open') {
+    await submitOpenQuestion(chapter);
   } else {
-    submitClientSide(task);
+    submitClientSide(chapter);
   }
 }
 
-function submitClientSide(task) {
-  const submitBtn   = document.getElementById('submitBtn');
-  const submitHint  = document.getElementById('submitHint');
+function submitClientSide(chapter) {
+  const task = chapter.task;
+  const submitBtn  = document.getElementById('submitBtn');
+  const submitHint = document.getElementById('submitHint');
   let isCorrect = false;
   let answerText = '';
 
   if (task.type === 'single') {
-    const selected = document.querySelector('.choice-option.selected');
-    if (!selected) return;
-    const idx = parseInt(selected.dataset.index, 10);
+    const sel = document.querySelector('.choice-option.selected');
+    if (!sel) return;
+    const idx = parseInt(sel.dataset.index, 10);
     isCorrect  = idx === task.correct;
     answerText = task.options[idx];
     document.querySelectorAll('.choice-option').forEach(el => {
@@ -458,19 +482,18 @@ function submitClientSide(task) {
     });
 
   } else if (task.type === 'multiple') {
-    const selected = [...document.querySelectorAll('.choice-option.selected')].map(el => parseInt(el.dataset.index, 10));
-    isCorrect  = JSON.stringify([...selected].sort()) === JSON.stringify([...task.correct].sort());
-    answerText = selected.map(i => task.options[i]).join(', ');
+    const sel = [...document.querySelectorAll('.choice-option.selected')].map(el => parseInt(el.dataset.index,10));
+    isCorrect  = JSON.stringify([...sel].sort()) === JSON.stringify([...task.correct].sort());
+    answerText = sel.map(i => task.options[i]).join(', ');
     document.querySelectorAll('.choice-option').forEach(el => {
-      const i = parseInt(el.dataset.index, 10);
+      const i = parseInt(el.dataset.index,10);
       if (task.correct.includes(i)) el.classList.add('correct-answer');
-      else if (selected.includes(i)) el.classList.add('wrong-answer');
+      else if (sel.includes(i))     el.classList.add('wrong-answer');
       el.style.pointerEvents = 'none';
     });
 
   } else if (task.type === 'sort') {
-    const correctOrder = task.items.map((_, i) => i);
-    isCorrect  = JSON.stringify(sortOrder) === JSON.stringify(correctOrder);
+    isCorrect  = JSON.stringify(sortOrder) === JSON.stringify(task.items.map((_,i) => i));
     answerText = sortOrder.map(i => task.items[i]).join(' → ');
     document.querySelectorAll('.sort-item').forEach((el, pos) => {
       el.classList.add(sortOrder[pos] === pos ? 'sort-correct' : 'sort-wrong');
@@ -478,87 +501,63 @@ function submitClientSide(task) {
     document.querySelectorAll('.sort-btn').forEach(b => b.disabled = true);
 
   } else if (task.type === 'estimate') {
-    const slider   = document.getElementById('estimateSlider');
-    const guessed  = Number(slider.value);
-    const diff     = Math.abs(guessed - task.correct);
-    isCorrect      = diff <= task.tolerance;
-    answerText     = `${guessed} ${task.unit}`;
-
-    // Schieberegler deaktivieren
+    const slider  = document.getElementById('estimateSlider');
+    const guessed = Number(slider.value);
+    const diff    = Math.abs(guessed - task.correct);
+    isCorrect     = diff <= task.tolerance;
+    answerText    = `${guessed.toLocaleString('de-AT')} ${task.unit}`;
     slider.disabled = true;
 
-    // Visuelle Auswertung: Marker auf dem Track anzeigen
+    const range      = task.max - task.min;
+    const userPct    = ((guessed      - task.min) / range) * 100;
+    const correctPct = ((task.correct - task.min) / range) * 100;
     const track = document.getElementById('estimateResultTrack');
-    const bar   = document.getElementById('estimateResultBar');
     track.style.display = 'block';
     document.getElementById('estimateLegend').style.display = 'flex';
-
-    const range       = task.max - task.min;
-    const userPct     = ((guessed    - task.min) / range) * 100;
-    const correctPct  = ((task.correct - task.min) / range) * 100;
-
-    bar.style.setProperty('--user-pct',    `${userPct}%`);
-    bar.style.setProperty('--correct-pct', `${correctPct}%`);
-
     document.getElementById('markerUser').style.left    = `${userPct}%`;
     document.getElementById('markerCorrect').style.left = `${correctPct}%`;
 
-    const diffText = diff === 0
-      ? 'Exakt getroffen! 🎯'
-      : `${diff} ${task.unit} daneben`;
-    answerText = `${guessed.toLocaleString('de-AT')} ${task.unit} (${diffText})`;
+    if (!isCorrect) {
+      showFeedback(false, `Knapp daneben! Du lagst ${diff.toLocaleString('de-AT')} ${task.unit} neben der richtigen Antwort. ${task.feedback}`);
+      submitBtn.disabled = false;
+      document.getElementById('submitBtnText').textContent = 'Nochmal versuchen';
+      submitHint.textContent = 'Passe deinen Schieberegler an';
+      setTimeout(() => {
+        slider.disabled = false;
+        track.style.display = 'none';
+        document.getElementById('estimateLegend').style.display = 'none';
+      }, 2000);
+      return;
+    }
+    answerText = `${guessed.toLocaleString('de-AT')} ${task.unit} (±${diff})`;
   }
 
-  let feedbackText = isCorrect ? task.feedback : '❌ Noch nicht ganz – schau dir die markierten Elemente an und versuche es nochmal!';
-  if (task.type === 'estimate' && !isCorrect) {
-    const diff = Math.abs(Number(document.getElementById('estimateSlider').value) - task.correct);
-    feedbackText = `Knapp daneben! Du lagst ${diff} ${task.unit} neben der richtigen Antwort. ${task.feedback}`;
-  }
+  let feedbackText = isCorrect ? task.feedback : '❌ Noch nicht ganz – schau dir die markierten Elemente an!';
+  if (task.type === 'sort' && !isCorrect) feedbackText = 'Noch nicht richtig – versuche es nochmal!';
 
   showFeedback(isCorrect, feedbackText);
 
   if (isCorrect) {
     submitBtn.disabled = true;
-    submitHint.textContent = 'Station abgeschlossen!';
-    saveProgressClientSide(currentStation.id, answerText, task.feedback);
-    unlockNext(currentStation.id);
+    submitHint.textContent = '';
+    saveProgressClientSide(chapter.id, answerText, task.feedback);
+    setTimeout(() => afterCorrectAnswer(chapter, task.feedback), 1200);
   } else {
-    submitBtn.textContent = 'Nochmal versuchen';
-    if (task.type === 'sort') {
-      setTimeout(() => renderTaskUI(currentStation, false, null), 1500);
-    }
-    if (task.type === 'estimate') {
-      // Slider bleibt sichtbar, aber Button reset
-      submitBtn.disabled = false;
-      document.getElementById('estimateSlider').disabled = false;
-      document.getElementById('estimateResultTrack').style.display = 'none';
-      document.getElementById('estimateLegend').style.display = 'none';
-    }
+    submitBtn.disabled = false;
+    document.getElementById('submitBtnText').textContent = 'Nochmal versuchen';
+    if (task.type === 'sort') setTimeout(() => renderTaskUI(task, true), 1800);
   }
 }
 
-function showFeedback(correct, text) {
-  const box    = document.getElementById('feedbackBox');
-  const header = document.getElementById('feedbackHeader');
-  const body   = document.getElementById('feedbackText');
-  if (!box) return;
-  box.className    = `feedback-box ${correct ? 'correct' : 'incorrect'} visible`;
-  header.className = `feedback-header ${correct ? 'correct' : 'incorrect'}`;
-  header.textContent = correct ? '✅ Richtig!' : '❌ Noch nicht ganz…';
-  body.textContent   = String(text).replace(/^[✅❌]\s*/, '');
-}
+async function submitOpenQuestion(chapter) {
+  const ta  = document.getElementById('answerInput');
+  const txt = ta?.value.trim();
+  if (!txt) return;
 
-async function submitOpenQuestion() {
-  const textarea  = document.getElementById('answerInput');
-  const answerTxt = textarea?.value.trim();
-  if (!answerTxt) { showToast('Bitte schreibe zuerst deine Antwort.', 'error'); return; }
-
-  const submitBtn  = document.getElementById('submitBtn');
-  const submitHint = document.getElementById('submitHint');
-
-  submitBtn.disabled    = true;
-  textarea.disabled     = true;
-  submitHint.textContent = 'Gemini AI bewertet…';
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  ta.disabled = true;
+  document.getElementById('submitHint').textContent = 'Gemini AI bewertet…';
   document.getElementById('feedbackBox').className = 'feedback-box';
 
   const spinner = document.createElement('div');
@@ -568,131 +567,81 @@ async function submitOpenQuestion() {
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/evaluate`, {
-      method:  'POST',
-      headers: authHeaders(),
-      body:    JSON.stringify({
-        stationId: currentStation.id,
-        question:  currentStation.task.question,
-        keyInfo:   currentStation.task.keyInfo,
-        answer:    answerTxt
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({
+        stationId: chapter.id,
+        question:  chapter.task.question,
+        keyInfo:   chapter.task.keyInfo,
+        answer:    txt
       })
     });
     if (res.status === 401) { logout(); return; }
     const data = await res.json();
     if (!res.ok) throw new Error(data.message);
-
     spinner.remove();
+
     showFeedback(data.correct, data.feedback);
 
     if (data.correct) {
-      submitBtn.disabled    = true;
-      submitHint.textContent = 'Station abgeschlossen!';
-      progressMap[currentStation.id] = {
-        ...(progressMap[currentStation.id] || {}),
-        station_number: currentStation.id,
-        video_watched: true, answer_text: answerTxt, is_correct: true, feedback: data.feedback
+      submitBtn.disabled = true;
+      progressMap[chapter.id] = {
+        station_number: chapter.id, video_watched: true,
+        answer_text: txt, is_correct: true, feedback: data.feedback
       };
-      renderStations();
-      unlockNext(currentStation.id);
+      updateProgressUI();
+      setTimeout(() => afterCorrectAnswer(chapter, data.feedback), 1200);
     } else {
-      submitBtn.disabled    = false;
-      textarea.disabled     = false;
+      submitBtn.disabled = false;
+      ta.disabled = false;
       document.getElementById('submitBtnText').textContent = 'Nochmal versuchen';
-      submitHint.textContent = 'Schreibe eine neue Antwort!';
+      document.getElementById('submitHint').textContent = 'Schreibe eine neue Antwort';
     }
   } catch (err) {
     spinner.remove();
     showFeedback(false, `Fehler: ${err.message}`);
-    submitBtn.disabled    = false;
-    textarea.disabled     = false;
+    submitBtn.disabled = false;
+    ta.disabled = false;
     document.getElementById('submitBtnText').textContent = 'Nochmal senden';
   }
 }
 
-async function saveProgressClientSide(stationId, answerText, feedback) {
-  try {
-    await fetch(`${BACKEND_URL}/api/progress/complete/${stationId}`, {
-      method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ answerText, feedback })
-    });
-    progressMap[stationId] = {
-      ...(progressMap[stationId] || {}),
-      station_number: stationId, video_watched: true,
-      answer_text: answerText, is_correct: true, feedback
-    };
-    renderStations();
-  } catch (_) {}
-}
+// ===========================
+// Nach richtiger Antwort
+// ===========================
 
-function unlockNext(stationId) {
-  const nextId = stationId + 1;
-  if (nextId <= STATIONS.length) {
-    setTimeout(() => {
-      document.querySelector(`.station-card[data-id="${nextId}"]`)?.classList.add('just-unlocked');
-    }, 300);
-    showToast(`🎉 Station ${nextId} ist jetzt freigeschaltet!`, 'success');
+function afterCorrectAnswer(chapter, feedback) {
+  nextChapterIndex = calcNextChapterIndex();
+  updateProgressUI();
+
+  // Frage-Panel → "Weiter"-Panel
+  document.getElementById('panelQuestion').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.remove('hidden');
+  document.getElementById('completedTitle').textContent    = `✅ ${chapter.title} – Super gemacht!`;
+  document.getElementById('completedFeedback').textContent = feedback || '';
+
+  const btnContinue = document.getElementById('btnContinue');
+
+  if (nextChapterIndex >= LESSON.chapters.length) {
+    btnContinue.textContent = '🏆 Alle Kapitel abgeschlossen!';
+    btnContinue.onclick = () => onVideoEnded();
+    showToast('🏆 Alle Kapitel abgeschlossen! Herzlichen Glückwunsch!', 'success', 7000);
   } else {
-    showToast('🏆 Alle 12 Stationen abgeschlossen! Herzlichen Glückwunsch!', 'success', 7000);
+    const next = LESSON.chapters[nextChapterIndex];
+    btnContinue.textContent = `▶ Weiter zu: ${next.icon} ${next.title}`;
+    btnContinue.onclick = () => continueVideo();
+    showToast(`🎉 Kapitel ${chapter.id} abgeschlossen!`, 'success');
   }
 }
 
-async function markVideoWatched(stationNumber) {
-  try {
-    await fetch(`${BACKEND_URL}/api/progress/video-watched/${stationNumber}`, {
-      method: 'POST', headers: authHeaders()
-    });
-    if (!progressMap[stationNumber]) progressMap[stationNumber] = {};
-    progressMap[stationNumber].video_watched = true;
-  } catch (_) {}
-}
-
-// ===========================
-// Modal schließen
-// ===========================
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-  if (ytPlayer) {
-    try { ytPlayer.stopVideo(); } catch (_) {}
-    try { ytPlayer.destroy();   } catch (_) {}
-    ytPlayer = null;
-  }
-  document.getElementById('yt-player').innerHTML = '';
-  currentStation = null;
-}
-
-// ===========================
-// YouTube Player
-// ===========================
-
-function initYTPlayer(videoId) {
-  if (ytPlayer) { try { ytPlayer.destroy(); } catch (_) {} ytPlayer = null; }
-  document.getElementById('yt-player').innerHTML = '';
-  const tryInit = () => {
-    if (!ytApiReady || typeof YT === 'undefined' || !YT.Player) { setTimeout(tryInit, 200); return; }
-    ytPlayer = new YT.Player('yt-player', {
-      videoId,
-      playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
-      events: { onStateChange: onPlayerStateChange, onError: onPlayerError }
-    });
-  };
-  tryInit();
-}
-
-function onPlayerStateChange(event) {
-  if (event.data === 0) {
-    videoWatched = true;
-    markVideoWatched(currentStation?.id);
-    const hint = document.getElementById('videoHint');
-    hint.textContent = '✅ Video abgeschlossen! Du kannst jetzt die Aufgabe lösen.';
-    hint.className   = 'video-hint video-done';
-    enableTaskInput();
-  }
-}
-
-function onPlayerError() {
-  document.getElementById('videoHint').textContent = '⚠️ Video konnte nicht geladen werden. Bitte YouTube-ID prüfen.';
+function showFeedback(correct, text) {
+  const box = document.getElementById('feedbackBox');
+  const hdr = document.getElementById('feedbackHeader');
+  const bdy = document.getElementById('feedbackText');
+  if (!box) return;
+  box.className = `feedback-box ${correct ? 'correct' : 'incorrect'} visible`;
+  hdr.className = `feedback-header ${correct ? 'correct' : 'incorrect'}`;
+  hdr.textContent = correct ? '✅ Richtig!' : '❌ Noch nicht ganz…';
+  bdy.textContent = String(text).replace(/^[✅❌]\s*/,'');
 }
 
 // ===========================
@@ -700,83 +649,87 @@ function onPlayerError() {
 // ===========================
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // User-Info
   document.getElementById('userNameDisplay').textContent = currentUser.username;
   document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
   document.getElementById('logoutBtn').addEventListener('click', logout);
-  document.getElementById('modalClose').addEventListener('click', closeModal);
-  document.getElementById('modalOverlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('modalOverlay')) closeModal();
-  });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+  // Lesson-Titel
+  document.getElementById('startTitle').textContent    = LESSON.title;
+  document.getElementById('progressTitle').textContent = LESSON.title;
+
+  // Fortschritt laden
   await loadProgress();
-  renderStations();
+
+  // Nächstes Kapitel berechnen
+  nextChapterIndex = calcNextChapterIndex();
+  updateProgressUI();
+
+  // Start-Overlay: Video starten
+  document.getElementById('startVideoBtn').addEventListener('click', () => {
+    document.getElementById('videoStartOverlay').style.display = 'none';
+    initPlayer();
+  });
+
+  // Chatbot
+  initChatbot();
 });
 
 // ===========================
 // Chatbot
 // ===========================
 
-document.addEventListener('DOMContentLoaded', () => { initChatbot(); });
-
 function initChatbot() {
-  const fab        = document.getElementById('chatFab');
-  const heroBtn    = document.getElementById('chatHeroBtn');
-  const chatWindow = document.getElementById('chatWindow');
-  const closeBtn   = document.getElementById('chatClose');
-  const input      = document.getElementById('chatInput');
-  const sendBtn    = document.getElementById('chatSend');
-  const messages   = document.getElementById('chatMessages');
+  const fab     = document.getElementById('chatFab');
+  const heroBtn = document.getElementById('chatHeroBtn');
+  const win     = document.getElementById('chatWindow');
+  const closeBtn= document.getElementById('chatClose');
+  const input   = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('chatSend');
+  const msgs    = document.getElementById('chatMessages');
   let isOpen = false;
 
-  const openChat  = () => { isOpen = true;  chatWindow.classList.add('open');    chatWindow.setAttribute('aria-hidden','false'); input.focus(); };
-  const closeChat = () => { isOpen = false; chatWindow.classList.remove('open'); chatWindow.setAttribute('aria-hidden','true'); };
+  const open  = () => { isOpen=true;  win.classList.add('open');    win.setAttribute('aria-hidden','false'); input.focus(); };
+  const close = () => { isOpen=false; win.classList.remove('open'); win.setAttribute('aria-hidden','true'); };
 
-  fab.addEventListener('click',                  () => isOpen ? closeChat() : openChat());
-  if (heroBtn) heroBtn.addEventListener('click', () => isOpen ? closeChat() : openChat());
-  closeBtn.addEventListener('click', closeChat);
-  sendBtn.addEventListener('click', sendChatMessage);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } });
+  fab.addEventListener('click',                  () => isOpen ? close() : open());
+  if (heroBtn) heroBtn.addEventListener('click', () => isOpen ? close() : open());
+  closeBtn.addEventListener('click', close);
+  sendBtn.addEventListener('click', sendMsg);
+  input.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); sendMsg(); } });
 
-  function appendBubble(text, type) {
+  function addBubble(html, type) {
     const b = document.createElement('div');
     b.className = `chat-bubble chat-bubble-${type}`;
-    b.innerHTML = text;
-    messages.appendChild(b);
-    messages.scrollTop = messages.scrollHeight;
+    b.innerHTML = html;
+    msgs.appendChild(b);
+    msgs.scrollTop = msgs.scrollHeight;
   }
 
-  function showTyping() {
-    const t = document.createElement('div');
-    t.className = 'chat-typing'; t.id = 'chatTyping';
-    t.innerHTML = '<span></span><span></span><span></span>';
-    messages.appendChild(t);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  async function sendChatMessage() {
+  async function sendMsg() {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
-    sendBtn.disabled = true;
-    input.disabled   = true;
-    appendBubble(text, 'user');
-    showTyping();
+    sendBtn.disabled = input.disabled = true;
+    addBubble(text, 'user');
+    const typing = document.createElement('div');
+    typing.className='chat-typing'; typing.id='chatTyping';
+    typing.innerHTML='<span></span><span></span><span></span>';
+    msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
     try {
       const res  = await fetch(`${BACKEND_URL}/api/chat`, {
-        method: 'POST', headers: authHeaders(), body: JSON.stringify({ message: text })
+        method:'POST', headers: authHeaders(), body: JSON.stringify({ message: text })
       });
       document.getElementById('chatTyping')?.remove();
-      if (res.status === 401) { logout(); return; }
+      if (res.status===401) { logout(); return; }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Fehler');
-      appendBubble(data.reply, 'bot');
+      if (!res.ok) throw new Error(data.message||'Fehler');
+      addBubble(data.reply, 'bot');
     } catch (err) {
       document.getElementById('chatTyping')?.remove();
-      appendBubble(`⚠️ ${err.message}`, 'error');
+      addBubble(`⚠️ ${err.message}`, 'error');
     } finally {
-      sendBtn.disabled = false;
-      input.disabled   = false;
+      sendBtn.disabled = input.disabled = false;
       input.focus();
     }
   }

@@ -1,268 +1,211 @@
 // ============================================================
-// questions.js – Konfiguration der 12 Innsbruck-Stationen
+// questions.js – Konfiguration der interaktiven Videolektion
 // ============================================================
 //
-// AUFGABENTYPEN – einfach per "type" auswählen:
+// Das Video läuft durch und pausiert bei jedem "pauseAt"-Zeitstempel.
+// Dort erscheint eine Frage. Nach richtiger Antwort läuft das Video weiter.
 //
-// ── type: 'single' ──────────────────────────────────────────
-//    Einfachauswahl. Genau eine Antwort ist richtig.
-//      question: "Frage?"
-//      options:  ["Antwort A", "Antwort B", "Antwort C", "Antwort D"]
-//      correct:  0          ← Index der richtigen Antwort (0 = erste)
-//      feedback: "Erklärung warum die Antwort richtig ist."
+// AUFGABENTYPEN (type):
 //
-// ── type: 'multiple' ────────────────────────────────────────
-//    Mehrfachauswahl. Mehrere Antworten können richtig sein.
-//      question: "Frage?"
-//      options:  ["A", "B", "C", "D"]
-//      correct:  [0, 2]     ← Indices ALLER richtigen Antworten
-//      feedback: "Erklärung."
+//   'single'   – Einfachauswahl
+//                options: ["A","B","C","D"], correct: 0  (Index)
 //
-// ── type: 'open' ────────────────────────────────────────────
-//    Offene Frage, wird von Gemini KI bewertet.
-//      question: "Frage?"
-//      keyInfo:  "Stichworte, die in der Antwort vorkommen sollen"
+//   'multiple' – Mehrfachauswahl
+//                options: ["A","B","C","D"], correct: [0,2]  (Indices)
 //
-// ── type: 'sort' ────────────────────────────────────────────
-//    Sortieraufgabe. Items in die richtige Reihenfolge bringen.
-//      question: "Aufgabenstellung?"
-//      items:    ["Item 1", "Item 2", "Item 3"]  ← IN RICHTIGER REIHENFOLGE!
-//      feedback: "Erklärung der richtigen Reihenfolge."
+//   'open'     – Offene Frage, von Gemini KI bewertet
+//                keyInfo: "Stichworte für die KI"
 //
-// ── type: 'estimate' ────────────────────────────────────────
-//    Schätzfrage mit Schieberegler.
-//      question:   "Wie hoch/weit/groß ist...?"
-//      unit:       "Meter"         ← Einheit die angezeigt wird
-//      min:        0               ← Minimalwert des Schiebereglers
-//      max:        200             ← Maximalwert des Schiebereglers
-//      step:       1               ← Schrittgröße (1 = ganzzahlig)
-//      correct:    56              ← Die richtige Antwort
-//      tolerance:  5               ← Toleranz: ±5 Meter gilt als richtig
-//      feedback:   "Die genaue Antwort ist 56 Meter, weil..."
+//   'sort'     – Sortieraufgabe (▲ ▼)
+//                items: ["Erst","Dann","Zuletzt"]  ← in richtiger Reihenfolge!
 //
+//   'estimate' – Schätzfrage mit Schieberegler
+//                unit:"Meter", min:0, max:200, step:1, correct:56, tolerance:5
+//
+// pauseAt: Zeitstempel in SEKUNDEN (z.B. 90 = 1:30 min)
 // ============================================================
 
-const STATIONS = [
-  {
-    id: 1,
-    title: "Das Goldene Dachl",
-    subtitle: "Wahrzeichen Innsbrucks",
-    location: "Herzog-Friedrich-Straße, Altstadt",
-    youtubeId: "REPLACE_ME_01",
-    icon: "🏛️",
-    task: {
-      type: "single",
-      question: "Wie viele feuervergoldete Kupferschindeln hat das Goldene Dachl?",
-      options: [
-        "1.738 Schindeln",
-        "2.657 Schindeln",
-        "3.450 Schindeln",
-        "999 Schindeln"
-      ],
-      correct: 1,
-      feedback: "Richtig! Das Goldene Dachl hat genau 2.657 feuervergoldete Kupferschindeln. Es wurde um 1500 von Kaiser Maximilian I. als Erker an seinem Stadtpalast erbaut."
+const LESSON = {
+  title:     "Innsbruck – Interaktive Stadttour",
+  youtubeId: "REPLACE_ME_WITH_VIDEO_ID",
+
+  chapters: [
+    {
+      id: 1,
+      pauseAt: 60,
+      title: "Das Goldene Dachl",
+      icon: "🏛️",
+      task: {
+        type: "single",
+        question: "Wie viele feuervergoldete Kupferschindeln hat das Goldene Dachl?",
+        options: ["1.738 Schindeln", "2.657 Schindeln", "3.450 Schindeln", "999 Schindeln"],
+        correct: 1,
+        feedback: "Richtig! Das Goldene Dachl hat 2.657 feuervergoldete Kupferschindeln und wurde um 1500 von Kaiser Maximilian I. erbaut."
+      }
+    },
+    {
+      id: 2,
+      pauseAt: 130,
+      title: "Die Hofburg",
+      icon: "👑",
+      task: {
+        type: "multiple",
+        question: "Welche Aussagen über die Innsbrucker Hofburg stimmen? (Mehrere Antworten möglich)",
+        options: [
+          "Maria Theresia ließ sie im Barockstil umbauen",
+          "Sie wurde im 18. Jahrhundert umgebaut",
+          "Sie steht auf dem Bergisel",
+          "Heute ist sie ein Museum"
+        ],
+        correct: [0, 1, 3],
+        feedback: "Genau! Maria Theresia ließ die Hofburg im 18. Jahrhundert im Barockstil umbauen. Heute ist sie ein Museum – nicht auf dem Bergisel."
+      }
+    },
+    {
+      id: 3,
+      pauseAt: 200,
+      title: "Der Stadtturm",
+      icon: "🗼",
+      task: {
+        type: "estimate",
+        question: "Wie hoch ist der Innsbrucker Stadtturm?",
+        unit: "Meter",
+        min: 10,
+        max: 150,
+        step: 1,
+        correct: 56,
+        tolerance: 5,
+        feedback: "Der Stadtturm ist genau 56 Meter hoch und hat 148 Stufen bis zur Aussichtsplattform."
+      }
+    },
+    {
+      id: 4,
+      pauseAt: 280,
+      title: "Die Triumphpforte",
+      icon: "🏟️",
+      task: {
+        type: "open",
+        question: "Zu welchem Anlass wurde die Triumphpforte gebaut und warum hat sie zwei verschiedene Seiten?",
+        keyInfo: "Hochzeit Erzherzog Leopold 1765, Tod Kaiser Franz I. Stephan, eine Seite Freude, andere Seite Trauer, Maria Theresia"
+      }
+    },
+    {
+      id: 5,
+      pauseAt: 360,
+      title: "Hofkirche & Schwarze Mander",
+      icon: "⚔️",
+      task: {
+        type: "single",
+        question: "Wie viele Bronzestatuen ('Schwarze Mander') stehen in der Hofkirche?",
+        options: ["12 Statuen", "18 Statuen", "28 Statuen", "40 Statuen"],
+        correct: 2,
+        feedback: "Es sind 28 überlebensgroße Bronzestatuen! Sie bewachen das Kenotaph von Kaiser Maximilian I."
+      }
+    },
+    {
+      id: 6,
+      pauseAt: 440,
+      title: "Dom zu St. Jakob",
+      icon: "⛪",
+      task: {
+        type: "multiple",
+        question: "Was stimmt über den Dom zu St. Jakob? (Mehrere Antworten möglich)",
+        options: [
+          "Das Gnadenbild 'Maria Hilf' ist im Hauptaltar",
+          "Es wurde von Lucas Cranach d.Ä. gemalt",
+          "Der Dom ist im Gotikstil",
+          "Der Dom ist im Barockstil"
+        ],
+        correct: [0, 1, 3],
+        feedback: "Richtig! Das Gnadenbild von Lucas Cranach d.Ä. ist im Hauptaltar des Barock-Doms (nicht Gotik)."
+      }
+    },
+    {
+      id: 7,
+      pauseAt: 520,
+      title: "Die Annasäule",
+      icon: "🏺",
+      task: {
+        type: "sort",
+        question: "Bringe die Ereignisse rund um die Annasäule in die richtige zeitliche Reihenfolge:",
+        items: [
+          "Bayerische Truppen fallen in Tirol ein",
+          "Die Tiroler besiegen die Bayern am 26. Juli 1703",
+          "Beschluss zur Errichtung einer Gedenkssäule",
+          "Die Marmor-Annasäule wird aufgestellt"
+        ],
+        feedback: "Zuerst der Einfall der Bayern, dann der Sieg am Annatag, dann der Beschluss, schließlich die Aufstellung."
+      }
+    },
+    {
+      id: 8,
+      pauseAt: 600,
+      title: "Nordkettenbahn",
+      icon: "🏔️",
+      task: {
+        type: "estimate",
+        question: "Auf welche Höhe gelangt man mit der Nordkettenbahn bis zur Endstation Hafelekar?",
+        unit: "Meter",
+        min: 500,
+        max: 4000,
+        step: 10,
+        correct: 2334,
+        tolerance: 100,
+        feedback: "Die Endstation Hafelekar liegt auf 2.334 Metern. Die Stationen wurden von Stararchitektin Zaha Hadid entworfen."
+      }
+    },
+    {
+      id: 9,
+      pauseAt: 680,
+      title: "Bergisel Schanze",
+      icon: "🎿",
+      task: {
+        type: "single",
+        question: "Wer hat das heutige Gebäude der Bergisel Schanze entworfen?",
+        options: ["Kaiser Maximilian I.", "Maria Theresia", "Zaha Hadid", "Andreas Hofer"],
+        correct: 2,
+        feedback: "Richtig! Die Architektin Zaha Hadid entwarf die Schanze, die für die Vierschanzentournee und die Olympischen Spiele 1964/1976 bekannt ist."
+      }
+    },
+    {
+      id: 10,
+      pauseAt: 760,
+      title: "Der Inn-Fluss",
+      icon: "🌊",
+      task: {
+        type: "multiple",
+        question: "Was stimmt über den Inn-Fluss? (Mehrere Antworten möglich)",
+        options: [
+          "'Innsbruck' bedeutet 'Brücke über den Inn'",
+          "Der Inn entspringt in der Schweiz",
+          "Der Inn mündet in die Nordsee",
+          "Das Wasser ist grün durch Gletscherwasser"
+        ],
+        correct: [0, 1, 3],
+        feedback: "Genau! Der Name kommt von 'Brücke über den Inn', der Fluss kommt aus der Schweiz und mündet in die Donau – nicht Nordsee."
+      }
+    },
+    {
+      id: 11,
+      pauseAt: 840,
+      title: "Ferdinandeum",
+      icon: "🖼️",
+      task: {
+        type: "open",
+        question: "Was kann man im Tiroler Landesmuseum Ferdinandeum entdecken und nach wem ist es benannt?",
+        keyInfo: "Landesmuseum Tirols, gegründet 1823, Kaiser Ferdinand I., Kunst Kulturgeschichte, Gemälde, Archäologie, Naturwissenschaften"
+      }
+    },
+    {
+      id: 12,
+      pauseAt: 920,
+      title: "Volkskunstmuseum",
+      icon: "🎭",
+      task: {
+        type: "open",
+        question: "Was macht das Tiroler Volkskunstmuseum europaweit besonders?",
+        keyInfo: "Tiroler Bauernmöbel, Trachten, Krippen, Handwerk, eines der bedeutendsten Volkskunstmuseen Europas, neben Hofkirche"
+      }
     }
-  },
-  {
-    id: 2,
-    title: "Die Hofburg",
-    subtitle: "Kaiserliche Residenz",
-    location: "Rennweg 1, Innsbruck",
-    youtubeId: "REPLACE_ME_02",
-    icon: "👑",
-    task: {
-      type: "multiple",
-      question: "Welche Aussagen über die Innsbrucker Hofburg sind richtig? (Mehrere Antworten möglich)",
-      options: [
-        "Kaiserin Maria Theresia ließ sie im Barockstil umbauen",
-        "Sie wurde im 18. Jahrhundert umgebaut",
-        "Sie befindet sich auf dem Bergisel",
-        "Heute ist sie ein Museum mit kaiserlichen Prunkräumen"
-      ],
-      correct: [0, 1, 3],
-      feedback: "Genau! Maria Theresia ließ die Hofburg im 18. Jahrhundert im Barockstil umbauen. Heute können Besucher die prunkvollen Räume besichtigen. Die Hofburg liegt im Stadtzentrum – nicht auf dem Bergisel."
-    }
-  },
-  {
-    id: 3,
-    title: "Der Stadtturm",
-    subtitle: "Wächter der Altstadt",
-    location: "Herzog-Friedrich-Straße 21",
-    youtubeId: "REPLACE_ME_03",
-    icon: "🗼",
-    task: {
-      type: "estimate",
-      question: "Wie hoch ist der Innsbrucker Stadtturm?",
-      unit: "Meter",
-      min: 10,
-      max: 150,
-      step: 1,
-      correct: 56,
-      tolerance: 5,
-      feedback: "Der Stadtturm ist genau 56 Meter hoch! Um nach oben zu gelangen, muss man 148 Stufen erklimmen – aber der Panoramablick über Innsbruck ist die Mühe wert."
-    }
-  },
-  {
-    id: 4,
-    title: "Die Triumphpforte",
-    subtitle: "Tor zwischen Freude und Trauer",
-    location: "Maria-Theresien-Straße",
-    youtubeId: "REPLACE_ME_04",
-    icon: "🏟️",
-    task: {
-      type: "open",
-      question: "Zu welchem Anlass wurde die Triumphpforte gebaut und warum hat sie zwei verschiedene Seiten?",
-      keyInfo: "Hochzeit Erzherzog Leopold und Maria Ludovika 1765, Tod Kaiser Franz I. Stephan, eine Seite Freude, andere Seite Trauer, Maria Theresia ließ sie errichten"
-    }
-  },
-  {
-    id: 5,
-    title: "Hofkirche & Schwarze Mander",
-    subtitle: "Heldenwacht aus Bronze",
-    location: "Universitätsstraße 2",
-    youtubeId: "REPLACE_ME_05",
-    icon: "⚔️",
-    task: {
-      type: "single",
-      question: "Wie viele Bronzestatuen ('Schwarze Mander') stehen in der Hofkirche?",
-      options: [
-        "12 Statuen",
-        "18 Statuen",
-        "28 Statuen",
-        "40 Statuen"
-      ],
-      correct: 2,
-      feedback: "Genau – es sind 28 überlebensgroße Bronzestatuen! Sie bewachen das Kenotaph (ein Scheingrab) von Kaiser Maximilian I., der eigentlich in Wiener Neustadt begraben ist."
-    }
-  },
-  {
-    id: 6,
-    title: "Dom zu St. Jakob",
-    subtitle: "Innsbrucks Kathedrale",
-    location: "Domplatz 6",
-    youtubeId: "REPLACE_ME_06",
-    icon: "⛪",
-    task: {
-      type: "multiple",
-      question: "Welche Aussagen über den Dom zu St. Jakob stimmen? (Mehrere Antworten möglich)",
-      options: [
-        "Das Gnadenbild 'Maria Hilf' befindet sich im Hauptaltar",
-        "Das Bild wurde von Lucas Cranach dem Älteren gemalt",
-        "Der Dom wurde im Gotik-Stil erbaut",
-        "Der Dom ist im Barockstil gebaut"
-      ],
-      correct: [0, 1, 3],
-      feedback: "Richtig! Das berühmte Gnadenbild 'Maria Hilf' von Lucas Cranach d.Ä. befindet sich im Hauptaltar des Barock-Doms. Der Dom ist im Barockstil – nicht Gotikstil – erbaut."
-    }
-  },
-  {
-    id: 7,
-    title: "Die Annasäule",
-    subtitle: "Denkmal des Sieges",
-    location: "Maria-Theresien-Straße",
-    youtubeId: "REPLACE_ME_07",
-    icon: "🏺",
-    task: {
-      type: "sort",
-      question: "Bringe die Ereignisse rund um die Annasäule in die richtige zeitliche Reihenfolge:",
-      items: [
-        "Bayerische Truppen fallen in Tirol ein",
-        "Die Tiroler besiegen die Bayern am Festtag der Heiligen Anna (26. Juli 1703)",
-        "Zum Dank wird beschlossen, eine Gedenkssäule zu errichten",
-        "Die Marmor-Annasäule wird auf der Maria-Theresien-Straße aufgestellt"
-      ],
-      feedback: "Perfekt! Zuerst der Einfall der Bayern, dann der Sieg am Annatag, dann der Beschluss zum Denkmal, schließlich die Errichtung der Marmorsäule."
-    }
-  },
-  {
-    id: 8,
-    title: "Nordkettenbahn & Nordkette",
-    subtitle: "Von der Stadt auf den Berg",
-    location: "Rennweg 3 (Talstation)",
-    youtubeId: "REPLACE_ME_08",
-    icon: "🏔️",
-    task: {
-      type: "estimate",
-      question: "Auf welche Höhe gelangt man mit der Nordkettenbahn bis zur Endstation Hafelekar?",
-      unit: "Meter über dem Meeresspiegel",
-      min: 500,
-      max: 4000,
-      step: 10,
-      correct: 2334,
-      tolerance: 100,
-      feedback: "Die Endstation Hafelekar liegt auf 2.334 Metern! Von dort hat man einen atemberaubenden Blick auf Innsbruck und die gesamten Alpen."
-    }
-  },
-  {
-    id: 9,
-    title: "Bergisel Schanze",
-    subtitle: "Olympische Sprungschanze",
-    location: "Bergisel 3",
-    youtubeId: "REPLACE_ME_09",
-    icon: "🎿",
-    task: {
-      type: "single",
-      question: "Wer hat das heutige moderne Gebäude der Bergisel Schanze entworfen?",
-      options: [
-        "Kaiser Maximilian I.",
-        "Maria Theresia",
-        "Zaha Hadid",
-        "Andreas Hofer"
-      ],
-      correct: 2,
-      feedback: "Richtig! Die weltbekannte Architektin Zaha Hadid hat die Bergisel Schanze entworfen. Die Schanze ist für die Vierschanzentournee bekannt und war Schauplatz der Olympischen Spiele 1964 und 1976."
-    }
-  },
-  {
-    id: 10,
-    title: "Der Inn-Fluss",
-    subtitle: "Namensgeber der Stadt",
-    location: "Innpromenade",
-    youtubeId: "REPLACE_ME_10",
-    icon: "🌊",
-    task: {
-      type: "multiple",
-      question: "Welche Aussagen über den Inn-Fluss stimmen? (Mehrere Antworten möglich)",
-      options: [
-        "Der Name 'Innsbruck' bedeutet 'Brücke über den Inn'",
-        "Der Inn entspringt am Maloja-Pass in der Schweiz",
-        "Der Inn mündet in die Nordsee",
-        "Das Wasser des Inn ist grün durch Gletscherwasser"
-      ],
-      correct: [0, 1, 3],
-      feedback: "Genau! 'Innsbruck' heißt 'Brücke über den Inn', der Fluss kommt aus der Schweiz und ist wegen Gletscherwasser grün. Der Inn mündet in die Donau – nicht in die Nordsee."
-    }
-  },
-  {
-    id: 11,
-    title: "Landesmuseum Ferdinandeum",
-    subtitle: "Tirols Schatzkammer",
-    location: "Museumstraße 15",
-    youtubeId: "REPLACE_ME_11",
-    icon: "🖼️",
-    task: {
-      type: "sort",
-      question: "Ordne diese Sammlungsbereiche des Ferdinandeums von den ältesten bis zu den neuesten Exponaten:",
-      items: [
-        "Prähistorische Funde aus der Steinzeit",
-        "Kunstgegenstände aus dem Mittelalter",
-        "Barocke Gemälde aus dem 17./18. Jahrhundert",
-        "Moderne Kunst des 20./21. Jahrhunderts"
-      ],
-      feedback: "Super! Das Ferdinandeum zeigt Tirols Geschichte von der Steinzeit über das Mittelalter und den Barock bis zur modernen Kunst."
-    }
-  },
-  {
-    id: 12,
-    title: "Tiroler Volkskunstmuseum",
-    subtitle: "Tiroler Tradition erleben",
-    location: "Universitätsstraße 2",
-    youtubeId: "REPLACE_ME_12",
-    icon: "🎭",
-    task: {
-      type: "open",
-      question: "Was kann man im Tiroler Volkskunstmuseum entdecken und was macht es europaweit so bedeutend?",
-      keyInfo: "Tiroler Bauernmöbel, Trachten, Krippen, Handwerk, traditionelle Volkskultur Tirols, eines der bedeutendsten Volkskunstmuseen Europas, neben der Hofkirche"
-    }
-  }
-];
+  ]
+};
