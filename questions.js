@@ -79,12 +79,12 @@ const LESSON = {
         type: "single",
         question: "Wofür steht die Abkürzung ORF?",
         options: [
+          "Österreichisches Radio Fernsehen",
           "Österreichischer Rundfunk",
-          "Österreichische Radiofunk-Firma",
-          "Offizielle Rundfunk-Firma",
-          "Österreichische Rundfunk-Federation"
+          "Online Rundfunk Frequenz",
+          "Österreichische Rundfunk Förderung"
         ],
-        correct: 0,
+        correct: 1,
         feedback: "Richtig! ORF steht für Österreichischer Rundfunk – das ist der öffentliche Radio- und Fernsehsender Österreichs. Das Landesstudio Tirol ist hier in Innsbruck."
       }
     },
