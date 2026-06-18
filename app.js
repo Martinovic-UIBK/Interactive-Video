@@ -590,7 +590,7 @@ function submitClientSide(chapter) {
       }).join('  ');
       task.estimates.forEach((_, i) => { document.getElementById(`estimateSlider${i}`).disabled = false; });
       showFeedback(false, hints);
-      startRetryTimer(chapter, 15, () => {
+      startRetryTimer(chapter, 10, () => {
         task.estimates.forEach((_, i) => { document.getElementById(`estimateSlider${i}`).disabled = false; });
         const btn = document.getElementById('submitBtn');
         if (btn) { btn.disabled = false; document.getElementById('submitBtnText').textContent = 'Schätzungen abgeben'; }
@@ -632,7 +632,7 @@ function submitClientSide(chapter) {
       const direction = guessed < task.correct ? '📈 Der richtige Wert ist höher!' : '📉 Der richtige Wert ist niedriger!';
       slider.disabled = false;
       showFeedback(false, direction);
-      startRetryTimer(chapter, 15, () => {
+      startRetryTimer(chapter, 10, () => {
         slider.disabled = false;
         const btn = document.getElementById('submitBtn');
         if (btn) { btn.disabled = false; document.getElementById('submitBtnText').textContent = 'Schätzung abgeben'; }
@@ -658,7 +658,7 @@ function submitClientSide(chapter) {
     const delay = (task.type === 'estimate' || task.type === 'estimate_double') ? 10000 : 1200;
     setTimeout(() => afterCorrectAnswer(chapter, task.feedback), delay);
   } else {
-    startRetryTimer(chapter, 15);
+    startRetryTimer(chapter, 10);
   }
 }
 
@@ -705,7 +705,7 @@ async function submitOpenQuestion(chapter) {
       setTimeout(() => afterCorrectAnswer(chapter, data.feedback), 1200);
     } else {
       ta.disabled = false;
-      startRetryTimer(chapter, 15);
+      startRetryTimer(chapter, 10);
     }
   } catch (err) {
     spinner.remove();
