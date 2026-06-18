@@ -102,4 +102,47 @@ router.post('/video-watched/:stationNumber', authenticate, async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------
+// POST /api/progress/complete/:stationNumber
+// Für client-seitig bewertete Aufgaben (single / multiple / sort)
+// Body: { answerText, feedback }
+// ----------------------------------------------------------
+router.post('/complete/:stationNumber', authenticate, async (req, res) => {
+  try {
+    const stationNumber = parseInt(req.params.stationNumber, 10);
+    if (isNaN(stationNumber) || stationNumber < 1 || stationNumber > 12) {
+      return res.status(400).json({ message: 'Ungültige Stations-Nummer.' });
+    }
+
+    const { answerText, feedback } = req.body;
+
+    const { error } = await supabase
+      .from('progress')
+      .upsert(
+        {
+          user_id:        req.user.userId,
+          station_number: stationNumber,
+          video_watched:  true,
+          answer_text:    answerText || '',
+          is_correct:     true,
+          feedback:       feedback   || '',
+          completed_at:   new Date().toISOString(),
+          updated_at:     new Date().toISOString()
+        },
+        { onConflict: 'user_id,station_number' }
+      );
+
+    if (error) {
+      console.error('complete upsert error:', error);
+      return res.status(500).json({ message: 'Konnte Fortschritt nicht speichern.' });
+    }
+
+    return res.json({ success: true });
+
+  } catch (err) {
+    console.error('POST /complete error:', err);
+    return res.status(500).json({ message: 'Interner Fehler.' });
+  }
+});
+
 module.exports = router;

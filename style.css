@@ -721,6 +721,132 @@ a:hover { text-decoration: underline; }
   color: var(--text-muted);
 }
 
+/* ---------- Task Type Badge ---------- */
+.task-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 3px 9px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ---------- Choice Options (Single & Multiple) ---------- */
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.choice-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+  user-select: none;
+}
+
+.choice-option:hover:not(.choice-disabled):not(.correct-answer):not(.wrong-answer) {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  transform: translateX(3px);
+}
+
+.choice-option.selected      { border-color: var(--accent);  background: var(--accent-glow); }
+.choice-option.correct-answer { border-color: var(--success); background: var(--success-bg);  cursor: default; }
+.choice-option.wrong-answer   { border-color: var(--error);   background: var(--error-bg);    cursor: default; }
+.choice-option.choice-disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+.choice-radio, .choice-check {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border-hover);
+  flex-shrink: 0;
+  transition: border-color var(--transition), background var(--transition);
+  position: relative;
+}
+
+.choice-radio { border-radius: 50%; }
+.choice-check { border-radius: 4px; }
+
+.choice-option.selected       .choice-radio,
+.choice-option.selected       .choice-check  { border-color: var(--accent);  background: var(--accent); }
+.choice-option.correct-answer .choice-radio,
+.choice-option.correct-answer .choice-check  { border-color: var(--success); background: var(--success); }
+.choice-option.wrong-answer   .choice-radio,
+.choice-option.wrong-answer   .choice-check  { border-color: var(--error);   background: var(--error); }
+
+.choice-radio::after {
+  content: '';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #000; opacity: 0; transition: opacity var(--transition);
+}
+.choice-check::after {
+  content: '✓';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px; font-weight: 700; color: #000;
+  opacity: 0; transition: opacity var(--transition);
+}
+.choice-option.selected       .choice-radio::after,
+.choice-option.selected       .choice-check::after,
+.choice-option.correct-answer .choice-radio::after,
+.choice-option.correct-answer .choice-check::after,
+.choice-option.wrong-answer   .choice-radio::after,
+.choice-option.wrong-answer   .choice-check::after { opacity: 1; }
+
+.choice-text { font-size: 14px; color: var(--text-primary); line-height: 1.4; }
+
+/* ---------- Sort-Aufgabe ---------- */
+.sort-list { display: flex; flex-direction: column; gap: 8px; }
+
+.sort-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.sort-item.sort-correct { border-color: var(--success); background: var(--success-bg); }
+.sort-item.sort-wrong   { border-color: var(--error);   background: var(--error-bg); }
+.sort-item.sort-disabled { opacity: 0.45; pointer-events: none; }
+
+.sort-handle { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+
+.sort-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 11px;
+  width: 26px; height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+  padding: 0;
+}
+
+.sort-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+.sort-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.sort-text { font-size: 13.5px; color: var(--text-primary); line-height: 1.4; flex: 1; }
+
 /* ---------- Feedback Box ---------- */
 .feedback-box {
   margin-top: 16px;
