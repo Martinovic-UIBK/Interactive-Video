@@ -231,6 +231,36 @@ body {
   border:   none;
 }
 
+/* Frage-aktiv Overlay – blockiert Video-Interaktion */
+.video-question-overlay {
+  position:        absolute;
+  inset:           0;
+  z-index:         8;
+  display:         flex;
+  align-items:     flex-end;
+  justify-content: center;
+  padding-bottom:  18px;
+  cursor:          not-allowed;
+}
+
+.vqo-message {
+  background:    rgba(239, 68, 68, 0.92);
+  color:         #fff;
+  padding:       9px 22px;
+  border-radius: 99px;
+  font-size:     13px;
+  font-weight:   700;
+  opacity:       0;
+  transform:     translateY(8px);
+  transition:    opacity .3s, transform .3s;
+  pointer-events: none;
+}
+
+.video-question-overlay.show-warning .vqo-message {
+  opacity:   1;
+  transform: none;
+}
+
 /* Start Overlay */
 .video-start-overlay {
   position:    absolute;

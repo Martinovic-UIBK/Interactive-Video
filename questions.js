@@ -63,7 +63,7 @@ const LESSON = {
     },
     {
       id: 3,
-      pauseAt: 72,
+      pauseAt: 74,
       title: "Der Stadtturm",
       icon: "🗼",
       task: {
@@ -91,6 +91,17 @@ const LESSON = {
     },
     {
       id: 5,
+      pauseAt: 123,
+      title: "Die Altstadt",
+      icon: "🏘️",
+      task: {
+        type: "open",
+        question: "Beschreibe kurz, was die Innsbrucker Altstadt besonders macht. Was hast du bisher im Video gesehen?",
+        keyInfo: "mittelalterliche Gebäude, Herzog-Friedrich-Straße, Lauben, bunte Häuserfassaden, historisches Stadtbild, Fußgängerzone"
+      }
+    },
+    {
+      id: 6,
       pauseAt: 135,
       title: "Hofkirche & Schwarze Mander",
       icon: "⚔️",
@@ -103,7 +114,7 @@ const LESSON = {
       }
     },
     {
-      id: 6,
+      id: 7,
       pauseAt: 163,
       title: "Dom zu St. Jakob",
       icon: "⛪",
@@ -121,7 +132,7 @@ const LESSON = {
       }
     },
     {
-      id: 7,
+      id: 8,
       pauseAt: 184,
       title: "Die Annasäule",
       icon: "🏺",
@@ -138,7 +149,7 @@ const LESSON = {
       }
     },
     {
-      id: 8,
+      id: 9,
       pauseAt: 200,
       title: "Nordkettenbahn",
       icon: "🏔️",
@@ -155,7 +166,7 @@ const LESSON = {
       }
     },
     {
-      id: 9,
+      id: 10,
       pauseAt: 236,
       title: "Bergisel Schanze",
       icon: "🎿",

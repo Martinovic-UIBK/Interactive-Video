@@ -46,7 +46,7 @@ router.post('/', authenticate, async (req, res) => {
     if (typeof answer !== 'string' || answer.trim().length === 0) {
       return res.status(400).json({ message: 'Antwort darf nicht leer sein.' });
     }
-    if (stationId < 1 || stationId > 12) {
+    if (stationId < 1 || stationId > 20) {
       return res.status(400).json({ message: 'Ungültige Stations-ID.' });
     }
 
@@ -66,7 +66,7 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     // Gemini-Bewertung
-    const prompt = `Du bist ein freundlicher Lernassistent für Schüler der 4. Klasse Mittelschule (ca. 14-15 Jahre alt).
+    const prompt = `Du bist ein einfühlsamer, geduldiger Lernassistent für Schüler der 4. Klasse Mittelschule (ca. 14-15 Jahre alt).
 
 Bewerte ob die Schülerantwort inhaltlich korrekt ist.
 
@@ -80,10 +80,12 @@ Antworte NUR mit einem JSON-Objekt in dieser exakten Form (kein Markdown, kein z
 {"correct": boolean, "feedback": "string"}
 
 Regeln:
-- correct ist true wenn die Antwort mindestens 2 der erwarteten Kerninhalte korrekt erwähnt
-- feedback ist auf Deutsch, motivierend, max. 3 Sätze
-- Bei correct true: loben und eventuell ergänzende Info geben
-- Bei correct false: ermutigen und einen Hinweis geben ohne die Antwort zu verraten`;
+- correct ist true wenn die Antwort mindestens 2 der erwarteten Kerninhalte sinngemäß erwähnt
+- feedback ist auf Deutsch, max. 3 kurze Sätze, einfache Sprache für 14-Jährige
+- Bei correct true: kurz und herzlich loben (z.B. "Super gemacht! 🎉"), dann eine interessante Zusatzinfo
+- Bei correct false: NIEMALS entmutigen. Zuerst etwas Positives sagen falls möglich. Dann einen konkreten Tipp geben der in die richtige Richtung zeigt, OHNE die Antwort direkt zu verraten. Zum Schluss aufmuntern (z.B. "Du schaffst das! 💪")
+- Vermeide Formulierungen wie "leider", "falsch", "nicht richtig" – stattdessen: "fast", "guter Ansatz", "noch ein kleiner Schritt fehlt"
+- Beispiel für falsches Feedback: "Guter Versuch! Ein Tipp: Schau dir nochmal an, wer die Hofburg umbauen ließ – es war eine bekannte Kaiserin. Du schaffst das! 💪"`;
 
     const result   = await model.generateContent(prompt);
     const rawText  = result.response.text().trim();

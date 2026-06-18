@@ -60,7 +60,7 @@ router.post('/video-watched/:stationNumber', authenticate, async (req, res) => {
   try {
     const stationNumber = parseInt(req.params.stationNumber, 10);
 
-    if (isNaN(stationNumber) || stationNumber < 1 || stationNumber > 12) {
+    if (isNaN(stationNumber) || stationNumber < 1 || stationNumber > 20) {
       return res.status(400).json({ message: 'Ungültige Stations-Nummer.' });
     }
 
@@ -110,7 +110,7 @@ router.post('/video-watched/:stationNumber', authenticate, async (req, res) => {
 router.post('/complete/:stationNumber', authenticate, async (req, res) => {
   try {
     const stationNumber = parseInt(req.params.stationNumber, 10);
-    if (isNaN(stationNumber) || stationNumber < 1 || stationNumber > 12) {
+    if (isNaN(stationNumber) || stationNumber < 1 || stationNumber > 20) {
       return res.status(400).json({ message: 'Ungültige Stations-Nummer.' });
     }
 

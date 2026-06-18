@@ -182,7 +182,19 @@ function onPlayerReady() {
 
 function onPlayerStateChange(event) {
   // YT.PlayerState: PLAYING=1, PAUSED=2, ENDED=0
-  if (event.data === 1) startPolling();
+  if (event.data === 1) {
+    if (questionActive) {
+      // Frage noch nicht beantwortet – sofort wieder pausieren
+      ytPlayer.pauseVideo();
+      const overlay = document.getElementById('videoQuestionOverlay');
+      if (overlay) {
+        overlay.classList.add('show-warning');
+        setTimeout(() => overlay.classList.remove('show-warning'), 2500);
+      }
+      return;
+    }
+    startPolling();
+  }
   if (event.data === 2 || event.data === 0) stopPolling();
   if (event.data === 0) onVideoEnded();
 }
@@ -232,6 +244,10 @@ function onChapterReached(chapter) {
   document.getElementById('panelQuestionType').textContent = typeLabels[chapter.task?.type] || '✏️ Aufgabe';
   document.getElementById('panelQuestionText').textContent = chapter.task?.question || '';
 
+  // Video sperren
+  const vqo = document.getElementById('videoQuestionOverlay');
+  if (vqo) vqo.style.display = 'flex';
+
   // Panels umschalten
   document.getElementById('panelWaiting').classList.add('hidden');
   document.getElementById('panelCompleted').classList.add('hidden');
@@ -261,6 +277,8 @@ function showCompletedPanel(chapter, progress) {
 
 function continueVideo() {
   questionActive = false;
+  const vqo = document.getElementById('videoQuestionOverlay');
+  if (vqo) vqo.style.display = 'none';
   nextChapterIndex = calcNextChapterIndex();
   updateProgressUI();
 
@@ -473,32 +491,35 @@ function submitClientSide(chapter) {
     const idx = parseInt(sel.dataset.index, 10);
     isCorrect  = idx === task.correct;
     answerText = task.options[idx];
-    document.querySelectorAll('.choice-option').forEach(el => {
-      const i = parseInt(el.dataset.index, 10);
-      el.classList.remove('selected');
-      if (i === task.correct) el.classList.add('correct-answer');
-      else if (i === idx && !isCorrect) el.classList.add('wrong-answer');
-      el.style.pointerEvents = 'none';
-    });
+    if (isCorrect) {
+      document.querySelectorAll('.choice-option').forEach(el => {
+        const i = parseInt(el.dataset.index, 10);
+        if (i === task.correct) el.classList.add('correct-answer');
+        el.style.pointerEvents = 'none';
+      });
+    }
 
   } else if (task.type === 'multiple') {
     const sel = [...document.querySelectorAll('.choice-option.selected')].map(el => parseInt(el.dataset.index,10));
     isCorrect  = JSON.stringify([...sel].sort()) === JSON.stringify([...task.correct].sort());
     answerText = sel.map(i => task.options[i]).join(', ');
-    document.querySelectorAll('.choice-option').forEach(el => {
-      const i = parseInt(el.dataset.index,10);
-      if (task.correct.includes(i)) el.classList.add('correct-answer');
-      else if (sel.includes(i))     el.classList.add('wrong-answer');
-      el.style.pointerEvents = 'none';
-    });
+    if (isCorrect) {
+      document.querySelectorAll('.choice-option').forEach(el => {
+        const i = parseInt(el.dataset.index,10);
+        if (task.correct.includes(i)) el.classList.add('correct-answer');
+        el.style.pointerEvents = 'none';
+      });
+    }
 
   } else if (task.type === 'sort') {
     isCorrect  = JSON.stringify(sortOrder) === JSON.stringify(task.items.map((_,i) => i));
     answerText = sortOrder.map(i => task.items[i]).join(' → ');
-    document.querySelectorAll('.sort-item').forEach((el, pos) => {
-      el.classList.add(sortOrder[pos] === pos ? 'sort-correct' : 'sort-wrong');
-    });
-    document.querySelectorAll('.sort-btn').forEach(b => b.disabled = true);
+    if (isCorrect) {
+      document.querySelectorAll('.sort-item').forEach((el, pos) => {
+        el.classList.add('sort-correct');
+      });
+      document.querySelectorAll('.sort-btn').forEach(b => b.disabled = true);
+    }
 
   } else if (task.type === 'estimate') {
     const slider  = document.getElementById('estimateSlider');
@@ -518,7 +539,8 @@ function submitClientSide(chapter) {
     document.getElementById('markerCorrect').style.left = `${correctPct}%`;
 
     if (!isCorrect) {
-      showFeedback(false, `Knapp daneben! Du lagst ${diff.toLocaleString('de-AT')} ${task.unit} neben der richtigen Antwort. ${task.feedback}`);
+      const direction = guessed < task.correct ? '📈 Der richtige Wert ist höher!' : '📉 Der richtige Wert ist niedriger!';
+      showFeedback(false, `${direction} Du lagst ${diff.toLocaleString('de-AT')} ${task.unit} daneben. Versuche es noch einmal! 😊`);
       startRetryTimer(chapter, 15, () => {
         slider.disabled = false;
         track.style.display = 'none';
@@ -529,8 +551,7 @@ function submitClientSide(chapter) {
     answerText = `${guessed.toLocaleString('de-AT')} ${task.unit} (±${diff})`;
   }
 
-  let feedbackText = isCorrect ? task.feedback : '❌ Noch nicht ganz – schau dir die markierten Elemente an!';
-  if (task.type === 'sort' && !isCorrect) feedbackText = 'Noch nicht richtig – versuche es nochmal!';
+  let feedbackText = isCorrect ? task.feedback : 'Versuche es noch einmal! 😊';
 
   showFeedback(isCorrect, feedbackText);
 
@@ -669,12 +690,11 @@ async function resetProgress() {
   stopPolling();
   updateProgressUI();
 
-  if (ytPlayer) {
-    ytPlayer.seekTo(0);
-    ytPlayer.pauseVideo();
-  }
+  // Video-Overlay verstecken
+  const vqo = document.getElementById('videoQuestionOverlay');
+  if (vqo) vqo.style.display = 'none';
 
-  document.getElementById('videoStartOverlay').style.display = 'flex';
+  // Panels zurücksetzen
   document.getElementById('panelQuestion').classList.add('hidden');
   document.getElementById('panelCompleted').classList.add('hidden');
   const waiting = document.getElementById('panelWaiting');
@@ -684,7 +704,16 @@ async function resetProgress() {
     <p class="waiting-text">Das Video pausiert automatisch bei jeder Station und zeigt dir hier eine Aufgabe.</p>
   `;
 
-  showToast('Fortschritt zurückgesetzt!', 'info');
+  if (ytPlayer) {
+    // Bestehenden Player von vorne starten
+    ytPlayer.seekTo(0);
+    ytPlayer.playVideo();
+    startPolling();
+  } else {
+    document.getElementById('videoStartOverlay').style.display = 'flex';
+  }
+
+  showToast('Fortschritt zurückgesetzt! Das Video startet von vorne.', 'info');
 }
 
 function showFeedback(correct, text) {
@@ -694,7 +723,7 @@ function showFeedback(correct, text) {
   if (!box) return;
   box.className = `feedback-box ${correct ? 'correct' : 'incorrect'} visible`;
   hdr.className = `feedback-header ${correct ? 'correct' : 'incorrect'}`;
-  hdr.textContent = correct ? '✅ Richtig!' : '❌ Noch nicht ganz…';
+  hdr.textContent = correct ? '✅ Richtig!' : '😊 Fast! Versuche es nochmal…';
   bdy.textContent = String(text).replace(/^[✅❌]\s*/,'');
 }
 
