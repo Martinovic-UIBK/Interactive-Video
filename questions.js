@@ -151,9 +151,11 @@ const LESSON = {
       title: "Das Goldene Dachl",
       icon: "🏛️",
       task: {
-        type: "open",
-        question: "Das Goldene Dachl hat 2.657 feuervergoldete Kupferschindeln. Was schätzt du: Wie hoch ist der heutige Materialwert dieser Schindeln in Euro? Begründe deine Schätzung kurz.",
-        keyInfo: "zwischen 20000 und 25000 Euro, ca 20000 Euro, ca 25000 Euro, Materialwert Kupfer Gold Vergoldung, circa zwanzigtausend"
+        type: "single",
+        question: "Wie hoch ist der heutige Materialwert der 2.657 feuervergoldeten Kupferschindeln des Goldenen Dachls?",
+        options: ["ca. 25.000 €", "ca. 100.000 €", "ca. 1.000.000 €", "ca. 5.000.000 €"],
+        correct: 0,
+        feedback: "Richtig! Der Materialwert beträgt ca. 25.000 € – überraschend wenig für ein so berühmtes Wahrzeichen! Das Gold ist sehr dünn aufgetragen (feuervergoldet)."
       }
     },
 

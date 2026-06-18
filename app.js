@@ -289,8 +289,9 @@ function continueVideo() {
   if (nextChapterIndex >= LESSON.chapters.length) {
     document.getElementById('panelWaiting').innerHTML = `
       <div class="waiting-icon">🏆</div>
-      <p class="waiting-text">Herzlichen Glückwunsch! Du hast alle ${LESSON.chapters.length} Kapitel abgeschlossen!</p>
+      <p class="waiting-text">Alle Fragen beantwortet! Das Video läuft weiter bis zum Ende.</p>
     `;
+    ytPlayer.playVideo();
     return;
   }
 
