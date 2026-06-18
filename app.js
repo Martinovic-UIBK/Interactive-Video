@@ -519,14 +519,11 @@ function submitClientSide(chapter) {
 
     if (!isCorrect) {
       showFeedback(false, `Knapp daneben! Du lagst ${diff.toLocaleString('de-AT')} ${task.unit} neben der richtigen Antwort. ${task.feedback}`);
-      submitBtn.disabled = false;
-      document.getElementById('submitBtnText').textContent = 'Nochmal versuchen';
-      submitHint.textContent = 'Passe deinen Schieberegler an';
-      setTimeout(() => {
+      startRetryTimer(chapter, 15, () => {
         slider.disabled = false;
         track.style.display = 'none';
         document.getElementById('estimateLegend').style.display = 'none';
-      }, 2000);
+      });
       return;
     }
     answerText = `${guessed.toLocaleString('de-AT')} ${task.unit} (±${diff})`;
@@ -543,9 +540,7 @@ function submitClientSide(chapter) {
     saveProgressClientSide(chapter.id, answerText, task.feedback);
     setTimeout(() => afterCorrectAnswer(chapter, task.feedback), 1200);
   } else {
-    submitBtn.disabled = false;
-    document.getElementById('submitBtnText').textContent = 'Nochmal versuchen';
-    if (task.type === 'sort') setTimeout(() => renderTaskUI(task, true), 1800);
+    startRetryTimer(chapter, 15);
   }
 }
 
@@ -591,10 +586,8 @@ async function submitOpenQuestion(chapter) {
       updateProgressUI();
       setTimeout(() => afterCorrectAnswer(chapter, data.feedback), 1200);
     } else {
-      submitBtn.disabled = false;
       ta.disabled = false;
-      document.getElementById('submitBtnText').textContent = 'Nochmal versuchen';
-      document.getElementById('submitHint').textContent = 'Schreibe eine neue Antwort';
+      startRetryTimer(chapter, 15);
     }
   } catch (err) {
     spinner.remove();
@@ -626,11 +619,72 @@ function afterCorrectAnswer(chapter, feedback) {
     btnContinue.onclick = () => onVideoEnded();
     showToast('🏆 Alle Kapitel abgeschlossen! Herzlichen Glückwunsch!', 'success', 7000);
   } else {
-    const next = LESSON.chapters[nextChapterIndex];
-    btnContinue.textContent = `▶ Weiter zu: ${next.icon} ${next.title}`;
+    btnContinue.textContent = '▶ Weiter mit dem Video';
     btnContinue.onclick = () => continueVideo();
     showToast(`🎉 Kapitel ${chapter.id} abgeschlossen!`, 'success');
   }
+}
+
+// ===========================
+// 15-Sekunden-Timer bei falscher Antwort
+// ===========================
+
+function startRetryTimer(chapter, seconds, onExpire) {
+  const submitBtn  = document.getElementById('submitBtn');
+  const submitHint = document.getElementById('submitHint');
+  if (!submitBtn) return;
+  submitBtn.disabled = true;
+  document.getElementById('submitBtnText').textContent = `Nochmal versuchen (${seconds}s)`;
+
+  let remaining = seconds;
+  const timer = setInterval(() => {
+    remaining--;
+    if (remaining > 0) {
+      document.getElementById('submitBtnText').textContent = `Nochmal versuchen (${remaining}s)`;
+    } else {
+      clearInterval(timer);
+      if (onExpire) onExpire();
+      submitHint.textContent = 'Versuche es nochmal!';
+      renderTaskUI(chapter.task, true);
+    }
+  }, 1000);
+}
+
+// ===========================
+// Fortschritt zurücksetzen
+// ===========================
+
+async function resetProgress() {
+  if (!confirm('Möchtest du wirklich den gesamten Fortschritt zurücksetzen? Das Video startet von vorne.')) return;
+
+  try {
+    await fetch(`${BACKEND_URL}/api/progress/reset`, {
+      method: 'DELETE', headers: authHeaders()
+    });
+  } catch (_) {}
+
+  progressMap      = {};
+  nextChapterIndex = 0;
+  questionActive   = false;
+  stopPolling();
+  updateProgressUI();
+
+  if (ytPlayer) {
+    ytPlayer.seekTo(0);
+    ytPlayer.pauseVideo();
+  }
+
+  document.getElementById('videoStartOverlay').style.display = 'flex';
+  document.getElementById('panelQuestion').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.add('hidden');
+  const waiting = document.getElementById('panelWaiting');
+  waiting.classList.remove('hidden');
+  waiting.innerHTML = `
+    <div class="waiting-icon">⏸</div>
+    <p class="waiting-text">Das Video pausiert automatisch bei jeder Station und zeigt dir hier eine Aufgabe.</p>
+  `;
+
+  showToast('Fortschritt zurückgesetzt!', 'info');
 }
 
 function showFeedback(correct, text) {
@@ -670,6 +724,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('videoStartOverlay').style.display = 'none';
     initPlayer();
   });
+
+  // Reset
+  document.getElementById('resetBtn').addEventListener('click', resetProgress);
 
   // Chatbot
   initChatbot();

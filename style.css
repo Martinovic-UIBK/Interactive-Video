@@ -127,11 +127,33 @@ body {
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .progress-bar-inner {
   max-width: 1280px;
   margin:    0 auto;
+  flex:      1;
+}
+
+.btn-reset {
+  flex-shrink:   0;
+  background:    transparent;
+  border:        1px solid var(--border);
+  color:         var(--text2);
+  padding:       5px 12px;
+  border-radius: 8px;
+  font-size:     12px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    all .2s;
+  white-space:   nowrap;
+}
+.btn-reset:hover {
+  border-color: var(--error);
+  color:        var(--error);
 }
 
 .progress-header {

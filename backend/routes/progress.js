@@ -145,4 +145,27 @@ router.post('/complete/:stationNumber', authenticate, async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------
+// DELETE /api/progress/reset
+// Löscht den gesamten Fortschritt des eingeloggten Users
+// ----------------------------------------------------------
+router.delete('/reset', authenticate, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('progress')
+      .delete()
+      .eq('user_id', req.user.userId);
+
+    if (error) {
+      console.error('progress reset error:', error);
+      return res.status(500).json({ message: 'Fortschritt konnte nicht zurückgesetzt werden.' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /reset error:', err);
+    return res.status(500).json({ message: 'Interner Fehler.' });
+  }
+});
+
 module.exports = router;
