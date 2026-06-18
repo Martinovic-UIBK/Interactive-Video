@@ -434,6 +434,57 @@ function renderTaskUI(task, isEnabled) {
       document.getElementById('estimateValue').textContent = Number(e.target.value).toLocaleString('de-AT');
     });
     document.getElementById('submitBtn').addEventListener('click', submitTask);
+
+  } else if (task.type === 'estimate_double') {
+    const sliders = task.estimates.map((est, i) => {
+      const midVal = Math.round((est.min + est.max) / 2);
+      return `
+        <div class="estimate-double-item">
+          <div class="estimate-double-label">${est.label}</div>
+          <div class="estimate-display">
+            <span class="estimate-value" id="estimateValue${i}">${midVal.toLocaleString('de-AT')}</span>
+            <span class="estimate-unit">${est.unit}</span>
+          </div>
+          <div class="estimate-slider-row">
+            <span class="estimate-bound">${est.min.toLocaleString('de-AT')}</span>
+            <input type="range" class="estimate-slider" id="estimateSlider${i}"
+              min="${est.min}" max="${est.max}" step="${est.step}" value="${midVal}" />
+            <span class="estimate-bound">${est.max.toLocaleString('de-AT')}</span>
+          </div>
+          <div class="estimate-result-track" id="estimateResultTrack${i}" style="display:none">
+            <div class="estimate-result-bar"></div>
+            <div class="estimate-marker estimate-marker-user"    id="markerUser${i}"></div>
+            <div class="estimate-marker estimate-marker-correct" id="markerCorrect${i}"></div>
+          </div>
+        </div>
+      `;
+    }).join('<hr class="estimate-divider">');
+
+    container.innerHTML = `
+      <div class="estimate-wrapper">
+        ${sliders}
+        <div class="estimate-legend" id="estimateLegend" style="display:none">
+          <span class="legend-user">⬤ Deine Schätzung</span>
+          <span class="legend-correct">⬤ Richtige Antwort</span>
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="btn-submit" id="submitBtn">
+          <span id="submitBtnText">Schätzungen abgeben</span>
+        </button>
+        <span class="submit-hint" id="submitHint">Beide Schieberegler einstellen</span>
+      </div>
+      <div class="feedback-box" id="feedbackBox">
+        <div class="feedback-header" id="feedbackHeader"></div>
+        <div class="feedback-text"  id="feedbackText"></div>
+      </div>
+    `;
+    task.estimates.forEach((_, i) => {
+      document.getElementById(`estimateSlider${i}`).addEventListener('input', e => {
+        document.getElementById(`estimateValue${i}`).textContent = Number(e.target.value).toLocaleString('de-AT');
+      });
+    });
+    document.getElementById('submitBtn').addEventListener('click', submitTask);
   }
 }
 
@@ -522,6 +573,38 @@ function submitClientSide(chapter) {
       document.querySelectorAll('.sort-btn').forEach(b => b.disabled = true);
     }
 
+  } else if (task.type === 'estimate_double') {
+    const results = task.estimates.map((est, i) => {
+      const val  = Number(document.getElementById(`estimateSlider${i}`).value);
+      const diff = Math.abs(val - est.correct);
+      return { val, diff, ok: diff <= est.tolerance };
+    });
+    isCorrect  = results.every(r => r.ok);
+    answerText = results.map((r, i) => `${task.estimates[i].label}: ${r.val.toLocaleString('de-AT')} ${task.estimates[i].unit}`).join(' | ');
+
+    if (!isCorrect) {
+      const hints = results.map((r, i) => {
+        if (r.ok) return `✅ ${task.estimates[i].label}: passt!`;
+        const dir = r.val < task.estimates[i].correct ? '📈 höher' : '📉 niedriger';
+        return `${dir} (${task.estimates[i].label})`;
+      }).join('  ');
+      task.estimates.forEach((_, i) => { document.getElementById(`estimateSlider${i}`).disabled = false; });
+      showFeedback(false, hints);
+      startRetryTimer(chapter, 15);
+      return;
+    }
+    // Richtig: Visualisierung 10s zeigen
+    document.getElementById('estimateLegend').style.display = 'flex';
+    task.estimates.forEach((est, i) => {
+      document.getElementById(`estimateSlider${i}`).disabled = true;
+      const range      = est.max - est.min;
+      const userPct    = ((results[i].val - est.min) / range) * 100;
+      const correctPct = ((est.correct    - est.min) / range) * 100;
+      document.getElementById(`estimateResultTrack${i}`).style.display = 'block';
+      document.getElementById(`markerUser${i}`).style.left    = `${userPct}%`;
+      document.getElementById(`markerCorrect${i}`).style.left = `${correctPct}%`;
+    });
+
   } else if (task.type === 'estimate') {
     const slider  = document.getElementById('estimateSlider');
     const guessed = Number(slider.value);
@@ -560,7 +643,7 @@ function submitClientSide(chapter) {
     submitBtn.disabled = true;
     submitHint.textContent = '';
     saveProgressClientSide(chapter.id, answerText, task.feedback);
-    const delay = task.type === 'estimate' ? 10000 : 1200;
+    const delay = (task.type === 'estimate' || task.type === 'estimate_double') ? 10000 : 1200;
     setTimeout(() => afterCorrectAnswer(chapter, task.feedback), delay);
   } else {
     startRetryTimer(chapter, 15);

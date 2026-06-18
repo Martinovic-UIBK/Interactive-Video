@@ -816,6 +816,19 @@ body {
 .estimate-marker-user    { background: var(--warning); }
 .estimate-marker-correct { background: var(--success); }
 
+.estimate-double-item { margin-bottom: 4px; }
+.estimate-double-label {
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text2);
+  margin-bottom: 6px;
+}
+.estimate-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+
 .estimate-legend {
   display:         flex;
   justify-content: center;

@@ -7,20 +7,23 @@
 //
 // AUFGABENTYPEN (type):
 //
-//   'single'   – Einfachauswahl
-//                options: ["A","B","C","D"], correct: 0  (Index)
+//   'single'          – Einfachauswahl
+//                       options: ["A","B","C","D"], correct: 0  (Index)
 //
-//   'multiple' – Mehrfachauswahl
-//                options: ["A","B","C","D"], correct: [0,2]  (Indices)
+//   'multiple'        – Mehrfachauswahl
+//                       options: ["A","B","C","D"], correct: [0,2]  (Indices)
 //
-//   'open'     – Offene Frage, von Gemini KI bewertet
-//                keyInfo: "Stichworte für die KI"
+//   'open'            – Offene Frage, von Gemini KI bewertet
+//                       keyInfo: "Stichworte für die KI"
 //
-//   'sort'     – Sortieraufgabe (▲ ▼)
-//                items: ["Erst","Dann","Zuletzt"]  ← in richtiger Reihenfolge!
+//   'sort'            – Sortieraufgabe (▲ ▼)
+//                       items: ["Erst","Dann","Zuletzt"]  ← in richtiger Reihenfolge!
 //
-//   'estimate' – Schätzfrage mit Schieberegler
-//                unit:"Meter", min:0, max:200, step:1, correct:56, tolerance:5
+//   'estimate'        – Schätzfrage mit einem Schieberegler
+//                       unit, min, max, step, correct, tolerance
+//
+//   'estimate_double' – Schätzfrage mit ZWEI Schiebereglern
+//                       estimates: [ { label, unit, min, max, step, correct, tolerance }, ... ]
 //
 // pauseAt: Zeitstempel in SEKUNDEN (z.B. 90 = 1:30 min)
 // ============================================================
@@ -30,79 +33,103 @@ const LESSON = {
   youtubeId: "2BxOLAmP5dc",
 
   chapters: [
+    // ─────────────────────────────────────────────
+    // 1 · 0:36 – Hungerburgbahn
+    // ─────────────────────────────────────────────
     {
       id: 1,
       pauseAt: 36,
-      title: "Das Goldene Dachl",
-      icon: "🏛️",
+      title: "Die Hungerburgbahn",
+      icon: "🚡",
       task: {
         type: "single",
-        question: "Wie viele feuervergoldete Kupferschindeln hat das Goldene Dachl?",
-        options: ["1.738 Schindeln", "2.657 Schindeln", "3.450 Schindeln", "999 Schindeln"],
+        question: "What is the name of this vehicle with which we go to the top of Hungerburg?",
+        options: ["Ski lift", "Cable car", "Gondola", "Train"],
         correct: 1,
-        feedback: "Richtig! Das Goldene Dachl hat 2.657 feuervergoldete Kupferschindeln und wurde um 1500 von Kaiser Maximilian I. erbaut."
+        feedback: "Correct! This is a cable car (Standseilbahn). The Hungerburgbahn was designed by the famous architect Zaha Hadid and opened in 2007."
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 2 · 0:57 – Hungerburg Aussicht
+    // ─────────────────────────────────────────────
     {
       id: 2,
       pauseAt: 57,
-      title: "Die Hofburg",
-      icon: "👑",
+      title: "Hungerburg – Aussicht",
+      icon: "🏔️",
       task: {
-        type: "multiple",
-        question: "Welche Aussagen über die Innsbrucker Hofburg stimmen? (Mehrere Antworten möglich)",
-        options: [
-          "Maria Theresia ließ sie im Barockstil umbauen",
-          "Sie wurde im 18. Jahrhundert umgebaut",
-          "Sie steht auf dem Bergisel",
-          "Heute ist sie ein Museum"
-        ],
-        correct: [0, 1, 3],
-        feedback: "Genau! Maria Theresia ließ die Hofburg im 18. Jahrhundert im Barockstil umbauen. Heute ist sie ein Museum – nicht auf dem Bergisel."
+        type: "single",
+        question: "Von der Hungerburg aus siehst du diesen markanten Berg südlich von Innsbruck. Wie heißt er?",
+        options: ["Hafelekar", "Patscherkofel", "Großer Löffler", "Zuckerhütl"],
+        correct: 1,
+        feedback: "Richtig! Der Patscherkofel (2.246 m) ist das Hausberg-Wahrzeichen südlich von Innsbruck – bekannt durch die Olympischen Winterspiele 1964 und 1976."
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 3 · 1:14 – ORF Tirol
+    // ─────────────────────────────────────────────
     {
       id: 3,
       pauseAt: 74,
-      title: "Der Stadtturm",
-      icon: "🗼",
+      title: "ORF Tirol",
+      icon: "📺",
       task: {
-        type: "estimate",
-        question: "Wie hoch ist der Innsbrucker Stadtturm?",
-        unit: "Meter",
-        min: 10,
-        max: 150,
-        step: 1,
-        correct: 56,
-        tolerance: 5,
-        feedback: "Der Stadtturm ist genau 56 Meter hoch und hat 148 Stufen bis zur Aussichtsplattform."
+        type: "single",
+        question: "Wofür steht die Abkürzung ORF?",
+        options: [
+          "Österreichischer Rundfunk",
+          "Österreichische Radiofunk-Firma",
+          "Offizielle Rundfunk-Firma",
+          "Österreichische Rundfunk-Federation"
+        ],
+        correct: 0,
+        feedback: "Richtig! ORF steht für Österreichischer Rundfunk – das ist der öffentliche Radio- und Fernsehsender Österreichs. Das Landesstudio Tirol ist hier in Innsbruck."
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 4 · 1:50 – Hofgarten (Doppel-Schätzfrage)
+    // ─────────────────────────────────────────────
     {
       id: 4,
       pauseAt: 110,
-      title: "Die Triumphpforte",
-      icon: "🏟️",
+      title: "Der Hofgarten",
+      icon: "🌿",
       task: {
-        type: "open",
-        question: "Zu welchem Anlass wurde die Triumphpforte gebaut und warum hat sie zwei verschiedene Seiten?",
-        keyInfo: "Hochzeit Erzherzog Leopold 1765, Tod Kaiser Franz I. Stephan, eine Seite Freude, andere Seite Trauer, Maria Theresia"
+        type: "estimate_double",
+        question: "Errate zwei Fakten über den Innsbrucker Hofgarten!",
+        feedback: "Super! Der Hofgarten wurde um 1410 angelegt und hat eine Fläche von ca. 35.000 m². Er gehört zu den ältesten Gärten Österreichs.",
+        estimates: [
+          {
+            label: "Seit wann gibt es den Hofgarten? (Jahr)",
+            unit: "Jahr",
+            min: 1300,
+            max: 1900,
+            step: 10,
+            correct: 1410,
+            tolerance: 40
+          },
+          {
+            label: "Wie groß ist der Hofgarten?",
+            unit: "m²",
+            min: 5000,
+            max: 80000,
+            step: 1000,
+            correct: 35000,
+            tolerance: 8000
+          }
+        ]
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 5 · 2:03 – Innenhof der Hofburg / Schwarze Mander
+    // ─────────────────────────────────────────────
     {
       id: 5,
       pauseAt: 123,
-      title: "Die Altstadt",
-      icon: "🏘️",
-      task: {
-        type: "open",
-        question: "Beschreibe kurz, was die Innsbrucker Altstadt besonders macht. Was hast du bisher im Video gesehen?",
-        keyInfo: "mittelalterliche Gebäude, Herzog-Friedrich-Straße, Lauben, bunte Häuserfassaden, historisches Stadtbild, Fußgängerzone"
-      }
-    },
-    {
-      id: 6,
-      pauseAt: 135,
       title: "Hofkirche & Schwarze Mander",
       icon: "⚔️",
       task: {
@@ -113,70 +140,91 @@ const LESSON = {
         feedback: "Es sind 28 überlebensgroße Bronzestatuen! Sie bewachen das Kenotaph von Kaiser Maximilian I."
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 6 · 2:15 – Flüsterbogen
+    // ─────────────────────────────────────────────
+    {
+      id: 6,
+      pauseAt: 135,
+      title: "Der Flüsterbogen",
+      icon: "🤫",
+      task: {
+        type: "open",
+        question: "Du stehst vor dem mysteriösen Flüsterbogen in Innsbruck – einem Bogen, der Geheimnisse flüstert! Was glaubst du: Was passiert, wenn du an einer Seite des Bogens flüsterst? Und warum könnte das physikalisch funktionieren?",
+        keyInfo: "Schall Schallwellen, Flüstern an einer Seite ist an der anderen Seite zu hören, Akustik, Reflexion, Gewölbe überträgt Klang, Ellipsenform, leiser Ton reist entlang der Wand"
+      }
+    },
+
+    // ─────────────────────────────────────────────
+    // 7 · 2:43 – Goldenes Dachl – Materialwert
+    // ─────────────────────────────────────────────
     {
       id: 7,
       pauseAt: 163,
-      title: "Dom zu St. Jakob",
-      icon: "⛪",
+      title: "Das Goldene Dachl",
+      icon: "🏛️",
       task: {
-        type: "multiple",
-        question: "Was stimmt über den Dom zu St. Jakob? (Mehrere Antworten möglich)",
-        options: [
-          "Das Gnadenbild 'Maria Hilf' ist im Hauptaltar",
-          "Es wurde von Lucas Cranach d.Ä. gemalt",
-          "Der Dom ist im Gotikstil",
-          "Der Dom ist im Barockstil"
-        ],
-        correct: [0, 1, 3],
-        feedback: "Richtig! Das Gnadenbild von Lucas Cranach d.Ä. ist im Hauptaltar des Barock-Doms (nicht Gotik)."
+        type: "open",
+        question: "Das Goldene Dachl hat 2.657 feuervergoldete Kupferschindeln. Was schätzt du: Wie hoch ist der heutige Materialwert dieser Schindeln in Euro? Begründe deine Schätzung kurz.",
+        keyInfo: "zwischen 20000 und 25000 Euro, ca 20000 Euro, ca 25000 Euro, Materialwert Kupfer Gold Vergoldung, circa zwanzigtausend"
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 8 · 3:05 – Innsbrucks kleinstes Haus
+    // ─────────────────────────────────────────────
     {
       id: 8,
       pauseAt: 185,
-      title: "Die Annasäule",
-      icon: "🏺",
+      title: "Innsbrucks kleinstes Haus",
+      icon: "🏠",
       task: {
-        type: "sort",
-        question: "Bringe die Ereignisse rund um die Annasäule in die richtige zeitliche Reihenfolge:",
-        items: [
-          "Bayerische Truppen fallen in Tirol ein",
-          "Die Tiroler besiegen die Bayern am 26. Juli 1703",
-          "Beschluss zur Errichtung einer Gedenkssäule",
-          "Die Marmor-Annasäule wird aufgestellt"
-        ],
-        feedback: "Zuerst der Einfall der Bayern, dann der Sieg am Annatag, dann der Beschluss, schließlich die Aufstellung."
+        type: "single",
+        question: "Wie schmal ist Innsbrucks kleinstes Haus?",
+        options: ["57 cm", "141 cm", "211 cm", "318 cm"],
+        correct: 2,
+        feedback: "Richtig! Das schmalste Haus Innsbrucks ist nur 211 cm breit – trotzdem ist es bewohnt! Es steht in der Altstadt und ist eines der skurrilsten Gebäude der Stadt."
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 9 · 3:20 – Berliner Döner
+    // ─────────────────────────────────────────────
     {
       id: 9,
       pauseAt: 200,
-      title: "Nordkettenbahn",
-      icon: "🏔️",
+      title: "Berliner Döner",
+      icon: "🥙",
       task: {
-        type: "estimate",
-        question: "Auf welche Höhe gelangt man mit der Nordkettenbahn bis zur Endstation Hafelekar?",
-        unit: "Meter",
-        min: 500,
-        max: 4000,
-        step: 10,
-        correct: 2334,
-        tolerance: 100,
-        feedback: "Die Endstation Hafelekar liegt auf 2.334 Metern. Die Stationen wurden von Stararchitektin Zaha Hadid entworfen."
+        type: "single",
+        question: "Wie viel kostet alles zusammen: 1× Classic Kebap + 1× Falafel Sandwich + 1× Kebap Teller?",
+        options: ["17,50 €", "21,00 €", "24,00 €", "31,50 €"],
+        correct: 2,
+        feedback: "Genau 24,00 €! Der Berliner Döner in Innsbruck ist eine Institution – bekannt für frische Zutaten und faire Preise mitten in der Stadt."
       }
     },
+
+    // ─────────────────────────────────────────────
+    // 10 · 3:57 – Triumphpforte
+    // ─────────────────────────────────────────────
     {
       id: 10,
       pauseAt: 237,
-      title: "Bergisel Schanze",
-      icon: "🎿",
+      title: "Die Triumphpforte",
+      icon: "🏟️",
       task: {
         type: "single",
-        question: "Wer hat das heutige Gebäude der Bergisel Schanze entworfen?",
-        options: ["Kaiser Maximilian I.", "Maria Theresia", "Zaha Hadid", "Andreas Hofer"],
-        correct: 2,
-        feedback: "Richtig! Die Architektin Zaha Hadid entwarf die Schanze, die für die Vierschanzentournee und die Olympischen Spiele 1964/1976 bekannt ist."
+        question: "Zu wessen Ehren wurde die Innsbrucker Triumphpforte im Jahr 1765 errichtet?",
+        options: [
+          "Zur Hochzeit Erzherzog Leopolds und zum Gedenken an Kaiser Franz I. Stephan",
+          "Zum Sieg Österreichs über Napoleon Bonaparte",
+          "Zur Krönung von Kaiser Josef II. in Wien",
+          "Zum 500. Geburtstag von Kaiser Maximilian I."
+        ],
+        correct: 0,
+        feedback: "Richtig! Die Triumphpforte wurde 1765 anlässlich der Hochzeit von Erzherzog Leopold errichtet. Da Kaiser Franz I. Stephan während der Feierlichkeiten starb, hat das Tor zwei Seiten: eine für Freude (Hochzeit) und eine für Trauer (Tod des Kaisers)."
       }
-    },
+    }
   ]
 };
