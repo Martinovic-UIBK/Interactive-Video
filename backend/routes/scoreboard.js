@@ -26,16 +26,18 @@ function authenticate(req, res, next) {
 // GET /api/scoreboard  – Top-Liste (nur public user)
 router.get('/', authenticate, async (req, res) => {
   try {
-    // Alle User mit show_on_scoreboard = true
+    // Alle User laden; show_on_scoreboard-Filter nur wenn Spalte existiert
     const { data: users, error: uErr } = await supabase
       .from('users')
-      .select('id, username')
-      .eq('show_on_scoreboard', true);
+      .select('id, username, show_on_scoreboard');
 
     if (uErr) throw uErr;
 
+    // Nur User filtern die sichtbar sein wollen (null = noch nicht gewählt → sichtbar)
+    const visibleUsers = (users || []).filter(u => u.show_on_scoreboard !== false);
+
     // Punkte aggregieren
-    const results = await Promise.all(users.map(async u => {
+    const results = await Promise.all(visibleUsers.map(async u => {
       const { data: rows } = await supabase
         .from('progress')
         .select('points')
@@ -77,16 +79,15 @@ router.patch('/privacy', authenticate, async (req, res) => {
 // GET /api/scoreboard/me  – eigene Sichtbarkeit abfragen
 router.get('/me', authenticate, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('users')
       .select('show_on_scoreboard')
       .eq('id', req.user.userId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
-    return res.json({ show_on_scoreboard: data.show_on_scoreboard });
-  } catch (err) {
-    return res.status(500).json({ message: 'Fehler.' });
+    return res.json({ show_on_scoreboard: data?.show_on_scoreboard !== false });
+  } catch (_) {
+    return res.json({ show_on_scoreboard: true });
   }
 });
 

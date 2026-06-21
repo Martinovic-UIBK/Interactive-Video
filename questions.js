@@ -90,7 +90,24 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 4 · 1:50 – Hofgarten (Doppel-Schätzfrage)
+    // 4 · 1:35 – Haus der Begegnung
+    // ─────────────────────────────────────────────
+    {
+      id: 12,
+      pauseAt: 95,
+      title: "Haus der Begegnung",
+      icon: "🏢",
+      task: {
+        type: "open",
+        question: "Welches Gebäude wurde zuletzt im Video gezeigt?",
+        keyInfo: "Haus der Begegnung",
+        rewindTo: 77,
+        feedback: "Das Haus der Begegnung ist ein wichtiges Bildungs- und Kulturzentrum in Innsbruck. Es bietet Raum für Seminare, Veranstaltungen und Begegnungen – genau das, was der Name schon sagt: ein Haus, in dem Menschen zusammenkommen! 🏢"
+      }
+    },
+
+    // ─────────────────────────────────────────────
+    // 5 · 1:50 – Hofgarten (Doppel-Schätzfrage)
     // ─────────────────────────────────────────────
     {
       id: 4,
@@ -199,19 +216,19 @@ const LESSON = {
     {
       id: 10,
       pauseAt: 237,
-      title: "Die Triumphpforte",
+      title: "Was ist das?",
       icon: "🏟️",
       task: {
         type: "single",
-        question: "Zu wessen Ehren wurde die Innsbrucker Triumphpforte im Jahr 1765 errichtet?",
+        question: "Wie heißt diese Sehenswürdigkeit?",
         options: [
-          "Zur Hochzeit Erzherzog Leopolds und zum Gedenken an Kaiser Franz I. Stephan",
-          "Zum Sieg Österreichs über Napoleon Bonaparte",
-          "Zur Krönung von Kaiser Josef II. in Wien",
-          "Zum 500. Geburtstag von Kaiser Maximilian I."
+          "Die Triumphpforte",
+          "Die Annasäule",
+          "Das Stadttor Maria-Theresien-Straße",
+          "Der Bergisel-Bogen"
         ],
         correct: 0,
-        feedback: "Richtig! Die Triumphpforte wurde 1765 anlässlich der Hochzeit von Erzherzog Leopold errichtet. Da Kaiser Franz I. Stephan während der Feierlichkeiten starb, hat das Tor zwei Seiten: eine für Freude (Hochzeit) und eine für Trauer (Tod des Kaisers)."
+        feedback: "Richtig! Das ist die Triumphpforte! Sie wurde 1765 anlässlich der Hochzeit von Erzherzog Leopold errichtet. Da Kaiser Franz I. Stephan während der Feierlichkeiten starb, hat das Tor zwei Seiten: eine für Freude (Hochzeit) und eine für Trauer (Tod des Kaisers)."
       }
     },
 

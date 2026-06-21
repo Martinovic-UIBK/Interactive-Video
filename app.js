@@ -737,7 +737,19 @@ async function submitOpenQuestion(chapter) {
     } else {
       ta.disabled = false;
       attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
-      startRetryTimer(chapter, 10);
+      if (chapter.task.rewindTo != null) {
+        startRetryTimer(chapter, 10, () => {
+          // Video zum Wiederholungs-Zeitstempel zurückspulen
+          document.getElementById('panelQuestion').classList.add('hidden');
+          document.getElementById('panelWaiting').classList.remove('hidden');
+          questionActive = false;
+          ytPlayer.seekTo(chapter.task.rewindTo);
+          ytPlayer.playVideo();
+          showToast('⏪ Schau dir den Abschnitt nochmal an!', 'info', 3000);
+        });
+      } else {
+        startRetryTimer(chapter, 10);
+      }
     }
   } catch (err) {
     spinner.remove();
@@ -765,9 +777,11 @@ function afterCorrectAnswer(chapter, feedback) {
   const btnContinue = document.getElementById('btnContinue');
 
   if (nextChapterIndex >= LESSON.chapters.length) {
-    btnContinue.textContent = '🏆 Alle Kapitel abgeschlossen!';
-    btnContinue.onclick = () => onVideoEnded();
-    showToast('🏆 Alle Kapitel abgeschlossen! Herzlichen Glückwunsch!', 'success', 7000);
+    const total = getTotalPoints();
+    document.getElementById('completedTitle').textContent = `🏆 Super, du hast ${total} Punkte erreicht!`;
+    btnContinue.textContent = '▶ Video zu Ende schauen';
+    btnContinue.onclick = () => continueVideo();
+    showToast(`🏆 Alle Kapitel geschafft! Du hast ${total} Punkte erreicht!`, 'success', 7000);
   } else {
     btnContinue.textContent = '▶ Weiter mit dem Video';
     btnContinue.onclick = () => continueVideo();
