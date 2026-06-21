@@ -24,9 +24,17 @@ let progressMap       = {};   // { chapterId: progressRow }
 let ytPlayer          = null;
 let ytApiReady        = false;
 let pollInterval      = null;
-let questionActive    = false;     // Frage gerade sichtbar?
-let nextChapterIndex  = 0;         // Index des nächsten noch nicht gezeigten Kapitels
+let questionActive    = false;
+let nextChapterIndex  = 0;
 let sortOrder         = [];
+let attemptsMap       = {};   // { chapterId: attemptCount }
+
+function pointsForAttempts(n) {
+  if (n <= 1) return 10;
+  if (n === 2) return 8;
+  if (n === 3) return 5;
+  return 3;
+}
 
 window.onYouTubeIframeAPIReady = () => {
   ytApiReady = true;
@@ -70,11 +78,20 @@ function isChapterCompleted(chapterId) {
   return !!progressMap[chapterId]?.is_correct;
 }
 
+function getTotalPoints() {
+  return LESSON.chapters.reduce((sum, ch) => {
+    const row = progressMap[ch.id];
+    return sum + (row?.is_correct ? (row.points || 0) : 0);
+  }, 0);
+}
+
 function updateProgressUI() {
   const done  = getCompletedCount();
   const total = LESSON.chapters.length;
   document.getElementById('progressCount').textContent = `${done} / ${total}`;
   document.getElementById('progressBar').style.width   = `${Math.round((done / total) * 100)}%`;
+  const pts = document.getElementById('pointsDisplay');
+  if (pts) pts.textContent = `⭐ ${getTotalPoints()} Punkte`;
   renderChapterDots();
 }
 
@@ -92,14 +109,16 @@ async function loadProgress() {
 }
 
 async function saveProgressClientSide(chapterId, answerText, feedback) {
+  const attempts = attemptsMap[chapterId] || 1;
+  const points   = pointsForAttempts(attempts);
   try {
     await fetch(`${BACKEND_URL}/api/progress/complete/${chapterId}`, {
       method: 'POST', headers: authHeaders(),
-      body: JSON.stringify({ answerText, feedback })
+      body: JSON.stringify({ answerText, feedback, points, attempts })
     });
     progressMap[chapterId] = {
       station_number: chapterId, video_watched: true,
-      answer_text: answerText, is_correct: true, feedback
+      answer_text: answerText, is_correct: true, feedback, points, attempts
     };
     updateProgressUI();
   } catch (_) {}
@@ -212,6 +231,14 @@ function startPolling() {
     if (!chapter) { stopPolling(); return; }
 
     const time = ytPlayer.getCurrentTime();
+
+    // Skip-Sperre: nicht über nächste Frage hinaus spulen
+    if (time > chapter.pauseAt + 1) {
+      ytPlayer.seekTo(Math.max(0, chapter.pauseAt - 2));
+      showToast('⚠️ Beantworte zuerst die nächste Frage!', 'error', 2500);
+      return;
+    }
+
     if (time >= chapter.pauseAt) {
       ytPlayer.pauseVideo();
       stopPolling();
@@ -659,6 +686,7 @@ function submitClientSide(chapter) {
     const delay = (task.type === 'estimate' || task.type === 'estimate_double') ? 10000 : 1200;
     setTimeout(() => afterCorrectAnswer(chapter, task.feedback), delay);
   } else {
+    attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
     startRetryTimer(chapter, 10);
   }
 }
@@ -686,7 +714,9 @@ async function submitOpenQuestion(chapter) {
         stationId: chapter.id,
         question:  chapter.task.question,
         keyInfo:   chapter.task.keyInfo,
-        answer:    txt
+        answer:    txt,
+        points:    pointsForAttempts(attemptsMap[chapter.id] || 1),
+        attempts:  attemptsMap[chapter.id] || 1
       })
     });
     if (res.status === 401) { logout(); return; }
@@ -706,6 +736,7 @@ async function submitOpenQuestion(chapter) {
       setTimeout(() => afterCorrectAnswer(chapter, data.feedback), 1200);
     } else {
       ta.disabled = false;
+      attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
       startRetryTimer(chapter, 10);
     }
   } catch (err) {
@@ -791,6 +822,7 @@ async function resetProgress() {
   } catch (_) {}
 
   progressMap      = {};
+  attemptsMap      = {};
   nextChapterIndex = 0;
   questionActive   = false;
   stopPolling();
@@ -865,6 +897,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Reset
   document.getElementById('resetBtn').addEventListener('click', resetProgress);
 
+  // Scoreboard
+  document.getElementById('scoreboardBtn').addEventListener('click', openScoreboard);
+  document.getElementById('scoreboardClose').addEventListener('click', () => {
+    document.getElementById('scoreboardModal').classList.remove('open');
+  });
+
+  // Privacy-Toggle laden & Change-Handler
+  loadPrivacySetting();
+  document.getElementById('privacyToggle').addEventListener('change', e => togglePrivacy(e.target.checked));
+
   // Chatbot
   initChatbot();
 });
@@ -927,4 +969,61 @@ function initChatbot() {
       input.focus();
     }
   }
+}
+
+// ===========================
+// Scoreboard
+// ===========================
+
+async function openScoreboard() {
+  const modal = document.getElementById('scoreboardModal');
+  const body  = document.getElementById('scoreboardBody');
+  modal.classList.add('open');
+  body.innerHTML = '<div class="sb-loading">Lade Bestenliste…</div>';
+
+  try {
+    const res  = await fetch(`${BACKEND_URL}/api/scoreboard`, { headers: authHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
+    if (!data.scoreboard.length) {
+      body.innerHTML = '<div class="sb-empty">Noch keine Einträge 🏁</div>';
+      return;
+    }
+
+    const medals = ['🥇','🥈','🥉'];
+    body.innerHTML = data.scoreboard.map(r => `
+      <div class="sb-row ${r.isMe ? 'sb-me' : ''}">
+        <span class="sb-rank">${medals[r.rank-1] || r.rank}</span>
+        <span class="sb-name">${r.username}${r.isMe ? ' (du)' : ''}</span>
+        <span class="sb-pts">⭐ ${r.points} Pkt.</span>
+        <span class="sb-done">${r.answered}/${LESSON.chapters.length} ✓</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    body.innerHTML = `<div class="sb-empty">Fehler: ${err.message}</div>`;
+  }
+}
+
+// ===========================
+// Privacy-Einstellung
+// ===========================
+
+async function loadPrivacySetting() {
+  try {
+    const res  = await fetch(`${BACKEND_URL}/api/scoreboard/me`, { headers: authHeaders() });
+    const data = await res.json();
+    const toggle = document.getElementById('privacyToggle');
+    if (toggle) toggle.checked = data.show_on_scoreboard !== false;
+  } catch (_) {}
+}
+
+async function togglePrivacy(show) {
+  try {
+    await fetch(`${BACKEND_URL}/api/scoreboard/privacy`, {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify({ show })
+    });
+    showToast(show ? '👁 Du bist jetzt auf dem Scoreboard sichtbar' : '🔒 Du bist jetzt anonym', 'info');
+  } catch (_) {}
 }

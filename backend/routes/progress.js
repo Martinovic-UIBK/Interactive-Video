@@ -114,7 +114,7 @@ router.post('/complete/:stationNumber', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'Ungültige Stations-Nummer.' });
     }
 
-    const { answerText, feedback } = req.body;
+    const { answerText, feedback, points, attempts } = req.body;
 
     const { error } = await supabase
       .from('progress')
@@ -126,6 +126,8 @@ router.post('/complete/:stationNumber', authenticate, async (req, res) => {
           answer_text:    answerText || '',
           is_correct:     true,
           feedback:       feedback   || '',
+          points:         points     || 0,
+          attempts:       attempts   || 1,
           completed_at:   new Date().toISOString(),
           updated_at:     new Date().toISOString()
         },

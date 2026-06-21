@@ -6,10 +6,11 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 
-const authRoutes     = require('./routes/auth');
-const evaluateRoutes = require('./routes/evaluate');
-const progressRoutes = require('./routes/progress');
-const chatRoutes     = require('./routes/chat');
+const authRoutes        = require('./routes/auth');
+const evaluateRoutes    = require('./routes/evaluate');
+const progressRoutes    = require('./routes/progress');
+const chatRoutes        = require('./routes/chat');
+const scoreboardRoutes  = require('./routes/scoreboard');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -31,10 +32,11 @@ app.get('/health', (_req, res) => {
 });
 
 // ---- Routes ----
-app.use('/api/auth',     authRoutes);
-app.use('/api/evaluate', evaluateRoutes);
-app.use('/api/progress', progressRoutes);
-app.use('/api/chat',     chatRoutes);
+app.use('/api/auth',        authRoutes);
+app.use('/api/evaluate',    evaluateRoutes);
+app.use('/api/progress',    progressRoutes);
+app.use('/api/chat',        chatRoutes);
+app.use('/api/scoreboard',  scoreboardRoutes);
 
 // ---- 404 Handler ----
 app.use((_req, res) => {

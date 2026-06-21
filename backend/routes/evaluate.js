@@ -37,7 +37,7 @@ function authenticate(req, res, next) {
 // ----------------------------------------------------------
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { stationId, question, keyInfo, answer } = req.body;
+    const { stationId, question, keyInfo, answer, points, attempts } = req.body;
 
     // Eingabe-Validierung
     if (!stationId || !question || !keyInfo || !answer) {
@@ -125,6 +125,8 @@ Regeln:
           answer_text:    answer.trim(),
           is_correct:     isCorrect,
           feedback:       feedback,
+          points:         isCorrect ? (points || 0) : 0,
+          attempts:       attempts || 1,
           completed_at:   isCorrect ? new Date().toISOString() : null,
           updated_at:     new Date().toISOString()
         },

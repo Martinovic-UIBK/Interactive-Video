@@ -23,6 +23,7 @@
     </div>
     <div class="header-right">
       <button class="chat-hero-btn" id="chatHeroBtn" style="padding:7px 14px;font-size:13px;">🤖 Innsbruck-Bot</button>
+      <button class="btn-scoreboard" id="scoreboardBtn">🏆 Bestenliste</button>
       <div class="user-badge">
         <div class="user-avatar" id="userAvatar">?</div>
         <span id="userNameDisplay">…</span>
@@ -36,7 +37,10 @@
     <div class="progress-bar-inner">
       <div class="progress-header">
         <span class="progress-label" id="progressTitle">Innsbruck Stadttour</span>
-        <span class="progress-count" id="progressCount">0 / 12</span>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="points-display" id="pointsDisplay">⭐ 0 Punkte</span>
+            <span class="progress-count" id="progressCount">0 / 10</span>
+          </div>
       </div>
       <div class="progress-bar-track">
         <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
@@ -113,6 +117,25 @@
   </main>
 
 </div><!-- /#app -->
+
+<!-- Scoreboard Modal -->
+<div class="modal-overlay" id="scoreboardModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 class="modal-title">🏆 Bestenliste</h2>
+      <button class="modal-close" id="scoreboardClose">✕</button>
+    </div>
+    <div class="privacy-row">
+      <label class="privacy-label">
+        <input type="checkbox" id="privacyToggle" />
+        Ich möchte auf der Bestenliste erscheinen
+      </label>
+    </div>
+    <div id="scoreboardBody">
+      <div class="sb-loading">Lade Bestenliste…</div>
+    </div>
+  </div>
+</div>
 
 <!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
