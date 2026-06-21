@@ -1,32 +1,6 @@
 // ============================================================
 // questions.js – Konfiguration der interaktiven Videolektion
 // ============================================================
-//
-// Das Video läuft durch und pausiert bei jedem "pauseAt"-Zeitstempel.
-// Dort erscheint eine Frage. Nach richtiger Antwort läuft das Video weiter.
-//
-// AUFGABENTYPEN (type):
-//
-//   'single'          – Einfachauswahl
-//                       options: ["A","B","C","D"], correct: 0  (Index)
-//
-//   'multiple'        – Mehrfachauswahl
-//                       options: ["A","B","C","D"], correct: [0,2]  (Indices)
-//
-//   'open'            – Offene Frage, von Gemini KI bewertet
-//                       keyInfo: "Stichworte für die KI"
-//
-//   'sort'            – Sortieraufgabe (▲ ▼)
-//                       items: ["Erst","Dann","Zuletzt"]  ← in richtiger Reihenfolge!
-//
-//   'estimate'        – Schätzfrage mit einem Schieberegler
-//                       unit, min, max, step, correct, tolerance
-//
-//   'estimate_double' – Schätzfrage mit ZWEI Schiebereglern
-//                       estimates: [ { label, unit, min, max, step, correct, tolerance }, ... ]
-//
-// pauseAt: Zeitstempel in SEKUNDEN (z.B. 90 = 1:30 min)
-// ============================================================
 
 const LESSON = {
   title:     "Innsbruck – Interaktive Stadttour",
@@ -93,24 +67,30 @@ const LESSON = {
     // 4 · 1:35 – Haus der Begegnung
     // ─────────────────────────────────────────────
     {
-      id: 12,
+      id: 4,
       pauseAt: 95,
-      title: "Haus der Begegnung",
+      title: "Ein bekanntes Gebäude",
       icon: "🏢",
       task: {
-        type: "open",
-        question: "Welches Gebäude wurde zuletzt im Video gezeigt?",
-        keyInfo: "Haus der Begegnung",
+        type: "single",
+        question: "Wie heißt das Gebäude, das du gerade im Video gesehen hast?",
+        options: [
+          "Haus der Begegnung",
+          "Landhaus Tirol",
+          "Stadtarchiv Innsbruck",
+          "Haus der Musik"
+        ],
+        correct: 0,
         rewindTo: 77,
-        feedback: "Das Haus der Begegnung ist ein wichtiges Bildungs- und Kulturzentrum in Innsbruck. Es bietet Raum für Seminare, Veranstaltungen und Begegnungen – genau das, was der Name schon sagt: ein Haus, in dem Menschen zusammenkommen! 🏢"
+        feedback: "Richtig! Das Haus der Begegnung ist ein wichtiges Bildungs- und Kulturzentrum in Innsbruck. Es bietet Raum für Seminare, Veranstaltungen und Begegnungen – genau das, was der Name schon sagt! 🏢"
       }
     },
 
     // ─────────────────────────────────────────────
-    // 5 · 1:50 – Hofgarten (Doppel-Schätzfrage)
+    // 5 · 1:50 – Hofgarten
     // ─────────────────────────────────────────────
     {
-      id: 4,
+      id: 5,
       pauseAt: 110,
       title: "Der Hofgarten",
       icon: "🌿",
@@ -128,10 +108,10 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 5 · 2:03 – Innenhof der Hofburg / Schwarze Mander
+    // 6 · 2:03 – Hofkirche & Schwarze Mander
     // ─────────────────────────────────────────────
     {
-      id: 5,
+      id: 6,
       pauseAt: 123,
       title: "Hofkirche & Schwarze Mander",
       icon: "⚔️",
@@ -145,10 +125,10 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 6 · 2:15 – Flüsterbogen
+    // 7 · 2:15 – Flüsterbogen
     // ─────────────────────────────────────────────
     {
-      id: 6,
+      id: 7,
       pauseAt: 135,
       title: "Der Flüsterbogen",
       icon: "🤫",
@@ -160,10 +140,27 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 7 · 2:43 – Goldenes Dachl – Materialwert
+    // 8 · 2:32 – Souvenir-Magnete
     // ─────────────────────────────────────────────
     {
-      id: 7,
+      id: 8,
+      pauseAt: 152,
+      title: "Souvenir-Magnete",
+      icon: "🧲",
+      task: {
+        type: "single",
+        question: "Wie viel kosten dich 6 Magnete im besten Fall?",
+        options: ["11,80 €", "12,80 €", "13,80 €", "14,80 €"],
+        correct: 1,
+        feedback: "Genau – 12,80 €! Im besten Fall nimmst du das günstigste Angebot und sparst so ein paar Cent."
+      }
+    },
+
+    // ─────────────────────────────────────────────
+    // 9 · 2:43 – Goldenes Dachl
+    // ─────────────────────────────────────────────
+    {
+      id: 9,
       pauseAt: 163,
       title: "Das Goldene Dachl",
       icon: "🏛️",
@@ -177,10 +174,10 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 8 · 3:05 – Innsbrucks kleinstes Haus
+    // 10 · 3:05 – Innsbrucks kleinstes Haus
     // ─────────────────────────────────────────────
     {
-      id: 8,
+      id: 10,
       pauseAt: 185,
       title: "Innsbrucks kleinstes Haus",
       icon: "🏠",
@@ -194,10 +191,10 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 9 · 3:20 – Berliner Döner
+    // 11 · 3:20 – Berliner Döner
     // ─────────────────────────────────────────────
     {
-      id: 9,
+      id: 11,
       pauseAt: 200,
       title: "Berliner Döner",
       icon: "🥙",
@@ -211,10 +208,10 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 10 · 3:57 – Triumphpforte
+    // 12 · 3:57 – Triumphpforte
     // ─────────────────────────────────────────────
     {
-      id: 10,
+      id: 12,
       pauseAt: 237,
       title: "Was ist das?",
       icon: "🏟️",
@@ -233,10 +230,10 @@ const LESSON = {
     },
 
     // ─────────────────────────────────────────────
-    // 11 · 4:28 – Name Innsbruck
+    // 13 · 4:28 – Name Innsbruck
     // ─────────────────────────────────────────────
     {
-      id: 11,
+      id: 13,
       pauseAt: 268,
       title: "Woher kommt der Name?",
       icon: "🌉",
@@ -244,7 +241,7 @@ const LESSON = {
         type: "open",
         question: "Jetzt weißt du schon viel über Innsbruck! Aber weißt du auch, wie der Name 'Innsbruck' entstanden ist?",
         keyInfo: "Inn Fluss Brücke über den Inn Überquerung Innbrücke",
-        feedback: "Der Name 'Innsbruck' setzt sich aus zwei Wörtern zusammen: 'Inn' (der Fluss, der durch die Stadt fließt) und 'Brücke'. Im Mittelalter gab es hier eine wichtige Brücke über den Inn – und der Ort daneben hieß deshalb schlicht 'Innsbruck', also 'Brücke über den Inn'. Aus dieser kleinen Siedlung bei der Brücke wurde im Laufe der Jahrhunderte die Landeshauptstadt Tirols! 🌉"
+        feedback: "Der Name 'Innsbruck' setzt sich aus zwei Wörtern zusammen: 'Inn' (der Fluss, der durch die Stadt fließt) und 'Brücke'. Im Mittelalter gab es hier eine wichtige Brücke über den Inn – und der Ort daneben hieß deshalb schlicht 'Innsbruck', also 'Brücke über den Inn'. Aus dieser kleinen Siedlung wurde im Laufe der Jahrhunderte die Landeshauptstadt Tirols! 🌉"
       }
     }
   ]

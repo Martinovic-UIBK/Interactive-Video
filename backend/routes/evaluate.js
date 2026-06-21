@@ -50,6 +50,15 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'Ungültige Stations-ID.' });
     }
 
+    // Kurze-Antwort-Pre-Check (vor Gemini)
+    const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount < 3 || answer.trim().length < 15) {
+      return res.json({
+        correct:  false,
+        feedback: 'Kannst du das noch etwas genauer beschreiben? 🤔 Schreib ruhig einen ganzen Satz!'
+      });
+    }
+
     // Prüfen ob Station bereits korrekt beantwortet
     const { data: existingProgress } = await supabase
       .from('progress')

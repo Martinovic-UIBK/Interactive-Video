@@ -39,7 +39,7 @@
         <span class="progress-label" id="progressTitle">Innsbruck Stadttour</span>
           <div style="display:flex;align-items:center;gap:12px;">
             <span class="points-display" id="pointsDisplay">⭐ 0 Punkte</span>
-            <span class="progress-count" id="progressCount">0 / 12</span>
+            <span class="progress-count" id="progressCount">0 / 13</span>
           </div>
       </div>
       <div class="progress-bar-track">
@@ -117,6 +117,31 @@
   </main>
 
 </div><!-- /#app -->
+
+<!-- Abschluss-Screen -->
+<div class="completion-screen" id="completionScreen">
+  <div class="completion-box">
+    <div class="completion-icon">🎉</div>
+    <h1 class="completion-title">Herzlichen Glückwunsch!</h1>
+    <p class="completion-sub">Du hast die Innsbruck-Stadttour abgeschlossen!</p>
+    <div class="completion-stats">
+      <div class="completion-stat">
+        <span class="completion-stat-value" id="completionPoints">0</span>
+        <span class="completion-stat-label">Punkte</span>
+      </div>
+      <div class="completion-stat-divider">·</div>
+      <div class="completion-stat">
+        <span class="completion-stat-value" id="completionChapters">0</span>
+        <span class="completion-stat-label">Fragen richtig</span>
+      </div>
+    </div>
+    <p class="completion-msg">Super gemacht – du kennst Innsbruck jetzt richtig gut! 🏔️</p>
+    <div class="completion-actions">
+      <button class="btn-completion-scoreboard" onclick="openScoreboard()">🏆 Bestenliste ansehen</button>
+      <button class="btn-completion-reset" id="completionResetBtn">↺ Nochmal spielen</button>
+    </div>
+  </div>
+</div>
 
 <!-- Scoreboard Modal -->
 <div class="modal-overlay" id="scoreboardModal">

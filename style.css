@@ -1348,3 +1348,115 @@ body {
   min-width: 60px;
   text-align: right;
 }
+
+/* ===== Abschluss-Screen ===== */
+.completion-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0,0,0,0.85);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.4s ease;
+}
+.completion-screen.visible { display: flex; }
+
+.completion-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  max-width: 480px;
+  width: 100%;
+  padding: 48px 36px 36px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+.completion-icon {
+  font-size: 72px;
+  line-height: 1;
+  margin-bottom: 20px;
+}
+.completion-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+.completion-sub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+.completion-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 16px;
+  padding: 20px 32px;
+  margin-bottom: 24px;
+}
+.completion-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.completion-stat-value {
+  font-size: 40px;
+  font-weight: 800;
+  color: #f59e0b;
+  line-height: 1;
+}
+.completion-stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.completion-stat-divider {
+  font-size: 32px;
+  color: var(--border);
+}
+.completion-msg {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+.completion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.btn-completion-scoreboard {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-completion-scoreboard:hover { opacity: 0.85; }
+.btn-completion-reset {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-completion-reset:hover { background: var(--border); }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

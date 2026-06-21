@@ -647,15 +647,6 @@ function submitClientSide(chapter) {
     answerText    = `${guessed.toLocaleString('de-AT')} ${task.unit}`;
     slider.disabled = true;
 
-    const range      = task.max - task.min;
-    const userPct    = ((guessed      - task.min) / range) * 100;
-    const correctPct = ((task.correct - task.min) / range) * 100;
-    const track = document.getElementById('estimateResultTrack');
-    track.style.display = 'block';
-    document.getElementById('estimateLegend').style.display = 'flex';
-    document.getElementById('markerUser').style.left    = `${userPct}%`;
-    document.getElementById('markerCorrect').style.left = `${correctPct}%`;
-
     if (!isCorrect) {
       const direction = guessed < task.correct ? '📈 Der richtige Wert ist höher!' : '📉 Der richtige Wert ist niedriger!';
       slider.disabled = false;
@@ -669,10 +660,6 @@ function submitClientSide(chapter) {
       });
       return;
     }
-    // Richtig: Visualisierung für 10 Sekunden zeigen
-    track.style.display = 'block';
-    document.getElementById('estimateLegend').style.display = 'flex';
-    answerText = `${guessed.toLocaleString('de-AT')} ${task.unit}`;
   }
 
   let feedbackText = isCorrect ? task.feedback : '';
@@ -683,11 +670,21 @@ function submitClientSide(chapter) {
     submitBtn.disabled = true;
     submitHint.textContent = '';
     saveProgressClientSide(chapter.id, answerText, task.feedback);
-    const delay = (task.type === 'estimate' || task.type === 'estimate_double') ? 10000 : 1200;
-    setTimeout(() => afterCorrectAnswer(chapter, task.feedback), delay);
+    setTimeout(() => afterCorrectAnswer(chapter, task.feedback), 1200);
   } else {
     attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
-    startRetryTimer(chapter, 10);
+    if (task.rewindTo != null) {
+      startRetryTimer(chapter, 10, () => {
+        document.getElementById('panelQuestion').classList.add('hidden');
+        document.getElementById('panelWaiting').classList.remove('hidden');
+        questionActive = false;
+        ytPlayer.seekTo(task.rewindTo);
+        ytPlayer.playVideo();
+        showToast('⏪ Schau dir den Abschnitt nochmal an!', 'info', 3000);
+      });
+    } else {
+      startRetryTimer(chapter, 10);
+    }
   }
 }
 
@@ -768,25 +765,36 @@ function afterCorrectAnswer(chapter, feedback) {
   nextChapterIndex = calcNextChapterIndex();
   updateProgressUI();
 
-  // Frage-Panel → "Weiter"-Panel
+  const earnedPts = pointsForAttempts(attemptsMap[chapter.id] || 1);
+
   document.getElementById('panelQuestion').classList.add('hidden');
   document.getElementById('panelCompleted').classList.remove('hidden');
-  document.getElementById('completedTitle').textContent    = `✅ ${chapter.title} – Super gemacht!`;
+  document.getElementById('completedTitle').textContent    = `✅ ${chapter.title} – Super gemacht! (+${earnedPts} Punkte)`;
   document.getElementById('completedFeedback').textContent = feedback || '';
 
   const btnContinue = document.getElementById('btnContinue');
 
   if (nextChapterIndex >= LESSON.chapters.length) {
-    const total = getTotalPoints();
-    document.getElementById('completedTitle').textContent = `🏆 Super, du hast ${total} Punkte erreicht!`;
     btnContinue.textContent = '▶ Video zu Ende schauen';
-    btnContinue.onclick = () => continueVideo();
-    showToast(`🏆 Alle Kapitel geschafft! Du hast ${total} Punkte erreicht!`, 'success', 7000);
+    btnContinue.onclick = () => {
+      continueVideo();
+      setTimeout(() => showCompletionScreen(), 4000);
+    };
+    showToast(`🏆 Letzte Frage geschafft! +${earnedPts} Punkte`, 'success', 4000);
   } else {
     btnContinue.textContent = '▶ Weiter mit dem Video';
     btnContinue.onclick = () => continueVideo();
-    showToast(`🎉 Kapitel ${chapter.id} abgeschlossen!`, 'success');
+    showToast(`🎉 +${earnedPts} Punkte!`, 'success', 2500);
   }
+}
+
+function showCompletionScreen() {
+  const total = getTotalPoints();
+  const done  = LESSON.chapters.filter(ch => progressMap[ch.id]?.is_correct).length;
+  const el    = document.getElementById('completionScreen');
+  document.getElementById('completionPoints').textContent = total;
+  document.getElementById('completionChapters').textContent = done;
+  el.classList.add('visible');
 }
 
 // ===========================
@@ -910,6 +918,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Reset
   document.getElementById('resetBtn').addEventListener('click', resetProgress);
+  document.getElementById('completionResetBtn').addEventListener('click', () => {
+    document.getElementById('completionScreen').classList.remove('visible');
+    resetProgress();
+  });
 
   // Scoreboard
   document.getElementById('scoreboardBtn').addEventListener('click', openScoreboard);
