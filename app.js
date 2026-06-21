@@ -945,6 +945,12 @@ function initChatbot() {
   async function sendMsg() {
     const text = input.value.trim();
     if (!text) return;
+
+    if (questionActive) {
+      addBubble('🚫 Der Bot steht während einer Frage nicht zur Verfügung – beantworte zuerst die Aufgabe!', 'bot');
+      return;
+    }
+
     input.value = '';
     sendBtn.disabled = input.disabled = true;
     addBubble(text, 'user');

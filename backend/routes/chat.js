@@ -46,6 +46,20 @@ die gerade eine interaktive Stadttour durch Innsbruck machen.
 Beantworte Fragen auf Deutsch, einfach und verständlich.
 Halte deine Antworten kurz (max. 3-4 Sätze).
 
+WICHTIGE REGEL: Die folgenden Themen/Fragen gehören zu den Quiz-Aufgaben im Video und dürfen NICHT beantwortet werden:
+- Hungerburgbahn (Was ist das für ein Fahrzeug?)
+- Welcher Berg ist von der Hungerburg aus zu sehen?
+- Wofür steht ORF?
+- Wie groß ist der Hofgarten?
+- Wie viele Bronzestatuen stehen in der Hofkirche?
+- Was macht den Flüsterbogen besonders?
+- Wie hoch ist der Materialwert des Goldenen Dachls?
+- Wie schmal ist Innsbrucks kleinstes Haus?
+- Was kosten die Döner zusammen?
+- Zu wessen Ehren wurde die Triumphpforte errichtet?
+
+Wenn eine Frage erkennbar eine dieser Quiz-Aufgaben oder deren direkte Antwort abfragt, antworte freundlich aber bestimmt: "Das ist eine der Quiz-Fragen im Video – die sollst du selbst herausfinden! 😊 Ich helfe dir gerne bei anderen Fragen über Innsbruck."
+
 Schüler-Frage: ${message.trim()}`;
 
     const result  = await model.generateContent(prompt);
