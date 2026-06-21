@@ -213,6 +213,22 @@ const LESSON = {
         correct: 0,
         feedback: "Richtig! Die Triumphpforte wurde 1765 anlässlich der Hochzeit von Erzherzog Leopold errichtet. Da Kaiser Franz I. Stephan während der Feierlichkeiten starb, hat das Tor zwei Seiten: eine für Freude (Hochzeit) und eine für Trauer (Tod des Kaisers)."
       }
+    },
+
+    // ─────────────────────────────────────────────
+    // 11 · 4:28 – Name Innsbruck
+    // ─────────────────────────────────────────────
+    {
+      id: 11,
+      pauseAt: 268,
+      title: "Woher kommt der Name?",
+      icon: "🌉",
+      task: {
+        type: "open",
+        question: "Jetzt weißt du schon viel über Innsbruck! Aber weißt du auch, wie der Name 'Innsbruck' entstanden ist?",
+        keyInfo: "Inn Fluss Brücke über den Inn Überquerung Innbrücke",
+        feedback: "Der Name 'Innsbruck' setzt sich aus zwei Wörtern zusammen: 'Inn' (der Fluss, der durch die Stadt fließt) und 'Brücke'. Im Mittelalter gab es hier eine wichtige Brücke über den Inn – und der Ort daneben hieß deshalb schlicht 'Innsbruck', also 'Brücke über den Inn'. Aus dieser kleinen Siedlung bei der Brücke wurde im Laufe der Jahrhunderte die Landeshauptstadt Tirols! 🌉"
+      }
     }
   ]
 };
