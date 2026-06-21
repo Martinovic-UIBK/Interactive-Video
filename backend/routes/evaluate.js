@@ -46,7 +46,7 @@ router.post('/', authenticate, async (req, res) => {
     if (typeof answer !== 'string' || answer.trim().length === 0) {
       return res.status(400).json({ message: 'Antwort darf nicht leer sein.' });
     }
-    if (stationId < 1 || stationId > 20) {
+    if (typeof stationId !== 'number' || stationId < 1) {
       return res.status(400).json({ message: 'Ungültige Stations-ID.' });
     }
 

@@ -26,15 +26,22 @@ function authenticate(req, res, next) {
 // GET /api/scoreboard  – Top-Liste (nur public user)
 router.get('/', authenticate, async (req, res) => {
   try {
-    // Alle User laden; show_on_scoreboard-Filter nur wenn Spalte existiert
+    // Alle User laden – show_on_scoreboard optional (Spalte muss nicht existieren)
     const { data: users, error: uErr } = await supabase
       .from('users')
-      .select('id, username, show_on_scoreboard');
+      .select('id, username, show_on_scoreboard')
+      .order('id');
 
-    if (uErr) throw uErr;
-
-    // Nur User filtern die sichtbar sein wollen (null = noch nicht gewählt → sichtbar)
-    const visibleUsers = (users || []).filter(u => u.show_on_scoreboard !== false);
+    if (uErr) {
+      // Spalte existiert noch nicht → alle User laden ohne das Feld
+      const { data: usersBasic, error: uErr2 } = await supabase
+        .from('users')
+        .select('id, username');
+      if (uErr2) throw uErr2;
+      var visibleUsers = (usersBasic || []).map(u => ({ ...u, show_on_scoreboard: true }));
+    } else {
+      var visibleUsers = (users || []).filter(u => u.show_on_scoreboard !== false);
+    }
 
     // Punkte aggregieren
     const results = await Promise.all(visibleUsers.map(async u => {

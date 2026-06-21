@@ -51,6 +51,7 @@ app.use((err, _req, res, _next) => {
 
 // ---- Start ----
 app.listen(PORT, () => {
-  console.log(`✅ Backend läuft auf Port ${PORT}`);
+  console.log(`✅ Backend v2 läuft auf Port ${PORT}`);
   console.log(`   Erlaubte Origins: ${allowedOrigins.join(', ')}`);
+  console.log(`   Routes: /api/auth /api/evaluate /api/progress /api/chat /api/scoreboard`);
 });
