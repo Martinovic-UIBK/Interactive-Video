@@ -271,6 +271,21 @@ function onChapterReached(chapter) {
   document.getElementById('panelQuestionType').textContent = typeLabels[chapter.task?.type] || '✏️ Aufgabe';
   document.getElementById('panelQuestionText').textContent = chapter.task?.question || '';
 
+  // TTS button
+  const ttsContainer = document.getElementById('panelQuestionType');
+  const ttsBtn = document.createElement('button');
+  ttsBtn.className = 'btn-tts';
+  ttsBtn.innerHTML = '🔊';
+  ttsBtn.title = 'Frage vorlesen';
+  ttsBtn.addEventListener('click', () => {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(chapter.task?.question || '');
+    utter.lang = chapter.id === 1 || chapter.id === 8 ? 'en-US' : 'de-DE';
+    utter.rate = 0.9;
+    window.speechSynthesis.speak(utter);
+  });
+  ttsContainer.appendChild(ttsBtn);
+
   // Video sperren
   const vqo = document.getElementById('videoQuestionOverlay');
   if (vqo) vqo.style.display = 'flex';
@@ -390,17 +405,26 @@ function renderTaskUI(task, isEnabled) {
         <div class="feedback-text"  id="feedbackText"></div>
       </div>
     `;
-    document.querySelectorAll('.choice-option').forEach(el => {
-      el.addEventListener('click', () => {
-        // Während Timer läuft keine Auswahl möglich
+    document.querySelectorAll('.choice-option').forEach((el, idx) => {
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('role', 'button');
+      const selectOption = () => {
         if (document.getElementById('submitBtn')?.dataset.timerActive) return;
         if (!isMulti) document.querySelectorAll('.choice-option').forEach(o => o.classList.remove('selected'));
         el.classList.toggle('selected');
         document.getElementById('submitBtn').disabled =
           document.querySelectorAll('.choice-option.selected').length === 0;
         document.getElementById('submitHint').textContent = '';
+      };
+      el.addEventListener('click', selectOption);
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOption(); }
+        const options = [...document.querySelectorAll('.choice-option')];
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); options[Math.min(idx+1, options.length-1)]?.focus(); }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); options[Math.max(idx-1, 0)]?.focus(); }
       });
     });
+    document.querySelectorAll('.choice-option')[0]?.focus();
     document.getElementById('submitBtn').addEventListener('click', submitTask);
 
   } else if (task.type === 'sort') {

@@ -145,14 +145,14 @@ const LESSON = {
     {
       id: 8,
       pauseAt: 152,
-      title: "Souvenir-Magnete",
+      title: "Souvenir Magnets",
       icon: "🧲",
       task: {
         type: "single",
-        question: "Wie viel kosten dich 6 Magnete im besten Fall?",
-        options: ["11,80 €", "12,80 €", "13,80 €", "14,80 €"],
+        question: "How much do 6 magnets cost you in the best case?",
+        options: ["€11.80", "€12.80", "€13.80", "€14.80"],
         correct: 1,
-        feedback: "Genau – 12,80 €! Im besten Fall nimmst du das günstigste Angebot und sparst so ein paar Cent."
+        feedback: "Exactly – €12.80! In the best case, you pick the cheapest offer and save a few cents."
       }
     },
 

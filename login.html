@@ -11,47 +11,72 @@
 </head>
 <body class="auth-page">
 
-  <div class="auth-container">
-    <div class="auth-logo">
-      <span class="logo-icon">🏔️</span>
-      <h1>Innsbruck Erkunden</h1>
-      <p>Interaktive Stadttour für die Schule</p>
+  <div class="login-split">
+    <!-- Left: Hero Visual -->
+    <div class="login-hero">
+      <div class="login-hero-bg"></div>
+      <div class="login-hero-content">
+        <div class="login-hero-badge">INTERAKTIVE LERNPLATTFORM</div>
+        <h1 class="login-hero-title">Innsbruck<br>Erkunden</h1>
+        <p class="login-hero-sub">Entdecke Innsbruck in einer interaktiven Stadttour mit Video, Quiz und spannenden Aufgaben.</p>
+        <div class="login-hero-stats">
+          <div class="login-stat"><span class="login-stat-val">13</span><span class="login-stat-lbl">Stationen</span></div>
+          <div class="login-stat-divider"></div>
+          <div class="login-stat"><span class="login-stat-val">🎬</span><span class="login-stat-lbl">Video-Tour</span></div>
+          <div class="login-stat-divider"></div>
+          <div class="login-stat"><span class="login-stat-val">🏆</span><span class="login-stat-lbl">Bestenliste</span></div>
+        </div>
+      </div>
+      <div class="login-hero-footer">Ein Projekt der Universität Innsbruck</div>
     </div>
 
-    <h2 class="auth-title">Anmelden</h2>
+    <!-- Right: Login Form -->
+    <div class="login-form-side">
+      <div class="login-form-box">
+        <div class="login-logo-row">
+          <span class="login-logo-icon">🏔️</span>
+          <span class="login-logo-text">Innsbruck Erkunden</span>
+        </div>
 
-    <div class="auth-error" id="loginError"></div>
+        <h2 class="login-form-title">Willkommen zurück!</h2>
+        <p class="login-form-sub">Melde dich an, um deine Stadttour fortzusetzen.</p>
 
-    <form id="loginForm" novalidate>
-      <div class="form-group">
-        <label for="username">Benutzername</label>
-        <input
-          type="text"
-          id="username"
-          name="username"
-          placeholder="Dein Benutzername"
-          autocomplete="username"
-          required
-        />
+        <div class="auth-error" id="loginError"></div>
+
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="username">Benutzername</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Dein Benutzername"
+              autocomplete="username"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="password">Passwort</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Dein Passwort"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn-primary login-submit-btn" id="loginBtn">
+            Anmelden
+          </button>
+        </form>
+
+        <p class="auth-footer">
+          Noch kein Konto?
+          <a href="register.html">Jetzt registrieren</a>
+        </p>
       </div>
-      <div class="form-group">
-        <label for="password">Passwort</label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          placeholder="Dein Passwort"
-          autocomplete="current-password"
-          required
-        />
-      </div>
-      <button type="submit" class="btn-primary" id="loginBtn">Anmelden</button>
-    </form>
-
-    <p class="auth-footer">
-      Noch kein Konto?
-      <a href="register.html">Jetzt registrieren</a>
-    </p>
+    </div>
   </div>
 
   <script>
