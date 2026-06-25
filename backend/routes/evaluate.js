@@ -14,7 +14,7 @@ const supabase = createClient(
 );
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // ---- Auth-Middleware ----
 function authenticate(req, res, next) {
@@ -150,8 +150,8 @@ Regeln:
     return res.json({ correct: isCorrect, feedback });
 
   } catch (err) {
-    console.error('evaluate error:', err);
-    return res.status(500).json({ message: 'Fehler bei der KI-Bewertung. Bitte erneut versuchen.' });
+    console.error('evaluate error:', err?.message || err, err?.status, err?.statusText);
+    return res.status(500).json({ message: `KI-Fehler: ${err?.message || 'Unbekannt'}` });
   }
 });
 

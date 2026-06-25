@@ -34,7 +34,13 @@ app.use(express.json());
 
 // ---- Health-Check ----
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    gemini_key_set: !!process.env.GEMINI_API_KEY,
+    gemini_key_prefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 8) + '...' : 'NOT SET',
+    supabase_url_set: !!process.env.SUPABASE_URL
+  });
 });
 
 // ---- Routes ----

@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // ---- Auth-Middleware ----
 function authenticate(req, res, next) {
@@ -71,8 +71,8 @@ Schüler-Frage: ${message.trim()}`;
     return res.json({ reply });
 
   } catch (err) {
-    console.error('chat error:', err);
-    return res.status(500).json({ message: 'KI antwortet gerade nicht. Bitte erneut versuchen.' });
+    console.error('chat error:', err?.message || err, err?.status, err?.statusText);
+    return res.status(500).json({ message: `KI-Fehler: ${err?.message || 'Unbekannt'}` });
   }
 });
 
