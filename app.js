@@ -182,7 +182,7 @@ function initPlayer() {
 
     ytPlayer = new YT.Player('yt-player', {
       videoId:     LESSON.youtubeId,
-      playerVars:  { rel: 0, modestbranding: 1, playsinline: 1, start: startSeconds },
+      playerVars:  { rel: 0, modestbranding: 1, playsinline: 1, start: startSeconds, html5: 1, origin: window.location.origin },
       events: {
         onReady:       onPlayerReady,
         onStateChange: onPlayerStateChange
