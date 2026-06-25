@@ -371,9 +371,13 @@ function continueVideo() {
 
 function onVideoEnded() {
   stopPolling();
+  if (getCompletedCount() >= LESSON.chapters.length) {
+    showCompletionScreen();
+    return;
+  }
   document.getElementById('panelWaiting').innerHTML = `
     <div class="waiting-icon">🎬</div>
-    <p class="waiting-text">Video zu Ende! ${getCompletedCount() < LESSON.chapters.length ? 'Noch nicht alle Fragen beantwortet – spule zum nächsten Kapitel zurück.' : '🏆 Alle Kapitel abgeschlossen!'}</p>
+    <p class="waiting-text">Video zu Ende! Noch nicht alle Fragen beantwortet – spule zum nächsten Kapitel zurück.</p>
   `;
   document.getElementById('panelWaiting').classList.remove('hidden');
   document.getElementById('panelQuestion').classList.add('hidden');
@@ -827,10 +831,10 @@ function afterCorrectAnswer(chapter, feedback) {
   const btnContinue = document.getElementById('btnContinue');
 
   if (nextChapterIndex >= LESSON.chapters.length) {
-    btnContinue.textContent = '▶ Video zu Ende schauen';
+    btnContinue.textContent = '🎉 Ergebnis ansehen';
     btnContinue.onclick = () => {
       continueVideo();
-      setTimeout(() => showCompletionScreen(), 4000);
+      showCompletionScreen();
     };
     showToast(`🏆 Letzte Frage geschafft! +${earnedPts} Punkte`, 'success', 4000);
   } else {
@@ -841,12 +845,183 @@ function afterCorrectAnswer(chapter, feedback) {
 }
 
 function showCompletionScreen() {
+  document.getElementById('scoreboardModal').classList.remove('open');
   const total = getTotalPoints();
   const done  = LESSON.chapters.filter(ch => progressMap[ch.id]?.is_correct).length;
   const el    = document.getElementById('completionScreen');
   document.getElementById('completionPoints').textContent = total;
   document.getElementById('completionChapters').textContent = done;
   el.classList.add('visible');
+}
+
+// ===========================
+// Urkunde als PDF herunterladen
+// ===========================
+
+function downloadCertificate() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1600;
+  canvas.height = 1132;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+
+  // Background
+  ctx.fillStyle = '#0f1923';
+  ctx.fillRect(0, 0, w, h);
+
+  // Gradient overlay
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, 'rgba(0,153,204,0.08)');
+  grad.addColorStop(0.5, 'rgba(0,212,255,0.04)');
+  grad.addColorStop(1, 'rgba(0,100,180,0.06)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Border
+  ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(40, 40, w - 80, h - 80);
+  ctx.strokeStyle = 'rgba(0,212,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(52, 52, w - 104, h - 104);
+
+  // Corner decorations
+  const cornerSize = 30;
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 3;
+  [[55, 55, 1, 1], [w-55, 55, -1, 1], [55, h-55, 1, -1], [w-55, h-55, -1, -1]].forEach(([x, y, dx, dy]) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y + cornerSize * dy);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + cornerSize * dx, y);
+    ctx.stroke();
+  });
+
+  // Top badge
+  ctx.fillStyle = 'rgba(0,212,255,0.12)';
+  const badgeW = 320, badgeH = 32, badgeX = (w - badgeW) / 2, badgeY = 100;
+  ctx.beginPath();
+  ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 16);
+  ctx.fill();
+  ctx.font = '600 11px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#00d4ff';
+  ctx.textAlign = 'center';
+  ctx.fillText('UNIVERSITÄT INNSBRUCK · LERNPLATTFORM', w / 2, badgeY + 21);
+
+  // Title
+  ctx.font = '800 52px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('URKUNDE', w / 2, 210);
+
+  // Subtitle line
+  ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - 120, 235);
+  ctx.lineTo(w / 2 + 120, 235);
+  ctx.stroke();
+
+  // "hiermit wird bestätigt, dass"
+  ctx.font = '400 18px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText('Hiermit wird bestätigt, dass', w / 2, 290);
+
+  // Username
+  ctx.font = '700 42px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#00d4ff';
+  ctx.fillText(currentUser.username, w / 2, 355);
+
+  // Underline under name
+  const nameWidth = ctx.measureText(currentUser.username).width;
+  ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - nameWidth / 2 - 20, 370);
+  ctx.lineTo(w / 2 + nameWidth / 2 + 20, 370);
+  ctx.stroke();
+
+  // Description
+  ctx.font = '400 18px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText('die interaktive Stadttour durch Innsbruck', w / 2, 420);
+  ctx.fillText('erfolgreich abgeschlossen hat.', w / 2, 448);
+
+  // Stats box
+  const boxW = 500, boxH = 80, boxX = (w - boxW) / 2, boxY = 490;
+  ctx.fillStyle = 'rgba(245,158,11,0.08)';
+  ctx.strokeStyle = 'rgba(245,158,11,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.font = '800 32px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillText(getTotalPoints(), w / 2 - 80, boxY + 50);
+  ctx.font = '500 14px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText('Punkte', w / 2 - 80, boxY + 70);
+
+  ctx.font = '600 24px Inter, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(245,158,11,0.3)';
+  ctx.fillText('·', w / 2, boxY + 48);
+
+  ctx.font = '800 32px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillText('13/13', w / 2 + 80, boxY + 50);
+  ctx.font = '500 14px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText('Fragen richtig', w / 2 + 80, boxY + 70);
+
+  // Achievement text
+  ctx.font = '600 16px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#22c55e';
+  ctx.fillText('🏔️  Innsbruck-Experte  🏔️', w / 2, 630);
+
+  // Date
+  const today = new Date().toLocaleDateString('de-AT', { day: '2-digit', month: 'long', year: 'numeric' });
+  ctx.font = '400 15px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText(`Innsbruck, ${today}`, w / 2, 700);
+
+  // Signatures
+  const sigY = 820;
+  // Left signature
+  ctx.font = 'italic 24px Georgia, serif';
+  ctx.fillStyle = '#e8e8f0';
+  ctx.fillText('Dr. M. Hofer', w / 2 - 250, sigY);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - 380, sigY + 15);
+  ctx.lineTo(w / 2 - 120, sigY + 15);
+  ctx.stroke();
+  ctx.font = '400 12px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText('Klassenvorstand', w / 2 - 250, sigY + 40);
+
+  // Right signature
+  ctx.font = 'italic 24px Georgia, serif';
+  ctx.fillStyle = '#e8e8f0';
+  ctx.fillText('Mag. K. Brenner', w / 2 + 250, sigY);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(w / 2 + 120, sigY + 15);
+  ctx.lineTo(w / 2 + 380, sigY + 15);
+  ctx.stroke();
+  ctx.font = '400 12px Inter, system-ui, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.fillText('Direktion', w / 2 + 250, sigY + 40);
+
+  // Footer
+  ctx.font = '400 11px Inter, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(144,144,168,0.5)';
+  ctx.fillText('Innsbruck Erkunden · Interaktive Stadttour · Universität Innsbruck', w / 2, h - 70);
+
+  // Download
+  const link = document.createElement('a');
+  link.download = `Innsbruck-Urkunde-${currentUser.username}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }
 
 // ===========================
@@ -1073,6 +1248,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('completionScreen').classList.remove('visible');
     resetProgress();
   });
+
+  // Urkunde
+  document.getElementById('downloadCertBtn').addEventListener('click', downloadCertificate);
 
   // Scoreboard
   document.getElementById('scoreboardBtn').addEventListener('click', openScoreboard);
