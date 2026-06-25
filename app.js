@@ -271,20 +271,25 @@ function onChapterReached(chapter) {
   document.getElementById('panelQuestionType').textContent = typeLabels[chapter.task?.type] || '✏️ Aufgabe';
   document.getElementById('panelQuestionText').textContent = chapter.task?.question || '';
 
-  // TTS button
-  const ttsContainer = document.getElementById('panelQuestionType');
+  // TTS button — placed after question text for visibility
+  const existingTts = document.getElementById('ttsBtn');
+  if (existingTts) existingTts.remove();
   const ttsBtn = document.createElement('button');
   ttsBtn.className = 'btn-tts';
-  ttsBtn.innerHTML = '🔊';
+  ttsBtn.id = 'ttsBtn';
+  ttsBtn.innerHTML = '🔊 <span class="tts-label">Vorlesen</span>';
   ttsBtn.title = 'Frage vorlesen';
   ttsBtn.addEventListener('click', () => {
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(chapter.task?.question || '');
     utter.lang = chapter.id === 1 || chapter.id === 8 ? 'en-US' : 'de-DE';
     utter.rate = 0.9;
+    ttsBtn.classList.add('tts-active');
+    utter.onend = () => ttsBtn.classList.remove('tts-active');
     window.speechSynthesis.speak(utter);
   });
-  ttsContainer.appendChild(ttsBtn);
+  const questionText = document.getElementById('panelQuestionText');
+  questionText.parentNode.insertBefore(ttsBtn, questionText.nextSibling);
 
   // Video sperren
   const vqo = document.getElementById('videoQuestionOverlay');
@@ -917,7 +922,47 @@ function showFeedback(correct, text) {
 // DOMContentLoaded
 // ===========================
 
+// ===========================
+// Onboarding
+// ===========================
+
+function initOnboarding() {
+  const onboarding = document.getElementById('onboarding');
+  const app = document.getElementById('app');
+  const check = document.getElementById('obAcceptCheck');
+  const btn = document.getElementById('obStartBtn');
+
+  if (sessionStorage.getItem('ibk_onboarding_done')) {
+    onboarding.style.display = 'none';
+    app.style.display = '';
+    return;
+  }
+
+  check.addEventListener('change', () => {
+    btn.disabled = !check.checked;
+  });
+
+  btn.addEventListener('click', () => {
+    sessionStorage.setItem('ibk_onboarding_done', '1');
+    onboarding.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    onboarding.style.opacity = '0';
+    onboarding.style.transform = 'translateY(-40px)';
+    setTimeout(() => {
+      onboarding.style.display = 'none';
+      app.style.display = '';
+      app.style.opacity = '0';
+      app.style.transform = 'translateY(30px)';
+      requestAnimationFrame(() => {
+        app.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        app.style.opacity = '1';
+        app.style.transform = 'none';
+      });
+    }, 500);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  initOnboarding();
   // User-Info
   document.getElementById('userNameDisplay').textContent = currentUser.username;
   document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();

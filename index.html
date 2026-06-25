@@ -10,7 +10,61 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div id="app">
+<!-- ===== Onboarding Intro ===== -->
+<div class="onboarding" id="onboarding">
+  <div class="onboarding-bg"></div>
+  <div class="onboarding-content">
+    <div class="ob-badge">WILLKOMMEN ZUR INTERAKTIVEN STADTTOUR</div>
+    <h1 class="ob-title">Innsbruck<br>Erkunden</h1>
+    <p class="ob-subtitle">Entdecke Innsbruck auf eine völlig neue Art – mit einem interaktiven Video, spannenden Quizfragen und einem smarten Chatbot an deiner Seite.</p>
+
+    <div class="ob-cards">
+      <div class="ob-card">
+        <div class="ob-card-icon">🎬</div>
+        <div class="ob-card-title">Video-Tour</div>
+        <div class="ob-card-desc">Das Video führt dich durch die Stadt und pausiert automatisch bei jeder Sehenswürdigkeit.</div>
+      </div>
+      <div class="ob-card">
+        <div class="ob-card-icon">❓</div>
+        <div class="ob-card-title">13 Quizfragen</div>
+        <div class="ob-card-desc">Beantworte Fragen zu Geographie, Geschichte, Mathe und mehr – auf Deutsch und Englisch.</div>
+      </div>
+      <div class="ob-card">
+        <div class="ob-card-icon">🔊</div>
+        <div class="ob-card-title">Vorlesen</div>
+        <div class="ob-card-desc">Jede Frage kann per Lautsprecher-Button vorgelesen werden – klicke einfach auf 🔊.</div>
+      </div>
+      <div class="ob-card">
+        <div class="ob-card-icon">⌨️</div>
+        <div class="ob-card-title">Tastatur-Bedienung</div>
+        <div class="ob-card-desc">Navigiere mit Tab & Pfeiltasten durch die Antworten. Enter oder Leertaste zum Auswählen.</div>
+      </div>
+      <div class="ob-card">
+        <div class="ob-card-icon">🏆</div>
+        <div class="ob-card-title">Punkte & Bestenliste</div>
+        <div class="ob-card-desc">Sammle Punkte für richtige Antworten und vergleiche dich mit anderen auf der Bestenliste.</div>
+      </div>
+      <div class="ob-card">
+        <div class="ob-card-icon">🤖</div>
+        <div class="ob-card-title">Innsbruck-Bot</div>
+        <div class="ob-card-desc">Hast du eine Frage über Innsbruck? Der KI-Bot hilft dir jederzeit weiter.</div>
+      </div>
+    </div>
+
+    <label class="ob-accept-row" id="obAcceptLabel">
+      <input type="checkbox" id="obAcceptCheck" />
+      <span class="ob-accept-checkbox"></span>
+      <span>Ich habe die Anleitung gelesen und möchte starten!</span>
+    </label>
+
+    <button class="ob-start-btn" id="obStartBtn" disabled>
+      <span>Los geht's!</span>
+      <span class="ob-start-arrow">→</span>
+    </button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
 
   <!-- ===== Header ===== -->
   <header class="app-header">
