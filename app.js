@@ -28,6 +28,8 @@ let questionActive    = false;
 let nextChapterIndex  = 0;
 let sortOrder         = [];
 let attemptsMap       = {};   // { chapterId: attemptCount }
+let botInteractions   = {};   // { chapterId: true } — tracks if user used bot during this question
+let deferredChapters  = [];   // chapter ids deferred via "Später erledigen"
 
 function pointsForAttempts(n) {
   if (n <= 1) return 10;
@@ -156,11 +158,12 @@ function renderChapterDots() {
 
 function calcNextChapterIndex() {
   for (let i = 0; i < LESSON.chapters.length; i++) {
-    if (!isChapterCompleted(LESSON.chapters[i].id)) {
+    const ch = LESSON.chapters[i];
+    if (!isChapterCompleted(ch.id) && !deferredChapters.includes(ch.id)) {
       return i;
     }
   }
-  return LESSON.chapters.length; // alle fertig
+  return LESSON.chapters.length;
 }
 
 // ===========================
@@ -327,7 +330,112 @@ function onChapterReached(chapter) {
   } else {
     document.getElementById('panelQuestion').classList.remove('hidden');
     renderTaskUI(chapter.task, true);
+    addSkipButton(chapter);
   }
+}
+
+// ===========================
+// Später erledigen (Skip/Defer)
+// ===========================
+
+function canSkip(chapterId) {
+  return (attemptsMap[chapterId] || 0) >= 2 && botInteractions[chapterId];
+}
+
+function addSkipButton(chapter) {
+  const existing = document.getElementById('skipSection');
+  if (existing) existing.remove();
+
+  const container = document.getElementById('taskContainer');
+  const section = document.createElement('div');
+  section.id = 'skipSection';
+
+  const btn = document.createElement('button');
+  btn.className = 'btn-skip-question';
+  btn.id = 'skipBtn';
+  btn.innerHTML = '⏭ Später erledigen';
+
+  const hint = document.createElement('div');
+  hint.className = 'skip-hint';
+  hint.id = 'skipHint';
+
+  section.appendChild(btn);
+  section.appendChild(hint);
+  container.appendChild(section);
+
+  btn.addEventListener('click', () => {
+    if (!canSkip(chapter.id)) return;
+    deferQuestion(chapter);
+  });
+
+  updateSkipButton(chapter);
+}
+
+function updateSkipButton(chapter) {
+  const btn = document.getElementById('skipBtn');
+  const hint = document.getElementById('skipHint');
+  if (!btn || !hint) return;
+
+  const attempts = attemptsMap[chapter.id] || 0;
+  const usedBot = !!botInteractions[chapter.id];
+  const unlocked = canSkip(chapter.id);
+
+  btn.disabled = !unlocked;
+
+  if (unlocked) {
+    hint.innerHTML = '⚠️ Du erhältst <strong>0 Punkte</strong> für diese Aufgabe.';
+  } else {
+    const needs = [];
+    if (attempts < 2) needs.push(`noch ${2 - attempts}× versuchen`);
+    if (!usedBot) needs.push('1× den KI-Bot fragen');
+    hint.innerHTML = `🔒 Erst verfügbar nach: ${needs.join(' und ')}`;
+  }
+}
+
+function deferQuestion(chapter) {
+  if (!deferredChapters.includes(chapter.id)) {
+    deferredChapters.push(chapter.id);
+  }
+  questionActive = false;
+  const vqo = document.getElementById('videoQuestionOverlay');
+  if (vqo) vqo.style.display = 'none';
+
+  nextChapterIndex = calcNextChapterIndex();
+  updateProgressUI();
+
+  document.getElementById('panelQuestion').classList.add('hidden');
+  document.getElementById('panelCompleted').classList.add('hidden');
+  document.getElementById('panelWaiting').classList.remove('hidden');
+  document.getElementById('panelWaiting').innerHTML = `
+    <div class="waiting-icon">⏭</div>
+    <p class="waiting-text">Frage übersprungen – du kommst später darauf zurück.</p>
+  `;
+
+  showToast('⏭ Frage wird später wiederholt – 0 Punkte', 'info', 3000);
+
+  if (nextChapterIndex >= LESSON.chapters.length && deferredChapters.length > 0) {
+    setTimeout(() => returnToDeferredQuestions(), 2000);
+  } else {
+    ytPlayer.playVideo();
+    startPolling();
+  }
+}
+
+function returnToDeferredQuestions() {
+  if (deferredChapters.length === 0) return;
+  const nextDeferredId = deferredChapters[0];
+  const chapter = LESSON.chapters.find(ch => ch.id === nextDeferredId);
+  if (!chapter) { deferredChapters.shift(); return returnToDeferredQuestions(); }
+
+  showToast(`⏪ Zurück zu: ${chapter.title}`, 'info', 3000);
+  ytPlayer.seekTo(Math.max(0, chapter.pauseAt - 2));
+  ytPlayer.playVideo();
+
+  setTimeout(() => {
+    ytPlayer.pauseVideo();
+    deferredChapters.shift();
+    onChapterReached(chapter);
+  }, 1500);
 }
 
 function showCompletedPanel(chapter, progress) {
@@ -373,6 +481,10 @@ function onVideoEnded() {
   stopPolling();
   if (getCompletedCount() >= LESSON.chapters.length) {
     showCompletionScreen();
+    return;
+  }
+  if (deferredChapters.length > 0) {
+    returnToDeferredQuestions();
     return;
   }
   document.getElementById('panelWaiting').innerHTML = `
@@ -729,6 +841,7 @@ function submitClientSide(chapter) {
     setTimeout(() => afterCorrectAnswer(chapter, task.feedback), 1200);
   } else {
     attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
+    updateSkipButton(chapter);
     if (task.rewindTo != null) {
       startRetryTimer(chapter, 10, () => {
         document.getElementById('panelQuestion').classList.add('hidden');
@@ -790,6 +903,7 @@ async function submitOpenQuestion(chapter) {
     } else {
       ta.disabled = false;
       attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
+      updateSkipButton(chapter);
       if (chapter.task.rewindTo != null) {
         startRetryTimer(chapter, 10, () => {
           // Video zum Wiederholungs-Zeitstempel zurückspulen
@@ -1072,6 +1186,8 @@ async function resetProgress() {
 
   progressMap      = {};
   attemptsMap      = {};
+  botInteractions  = {};
+  deferredChapters = [];
   nextChapterIndex = 0;
   questionActive   = false;
   stopPolling();
@@ -1248,6 +1364,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('completionScreen').classList.remove('visible');
     resetProgress();
   });
+  document.getElementById('completionClose').addEventListener('click', () => {
+    document.getElementById('completionScreen').classList.remove('visible');
+  });
 
   // Urkunde
   document.getElementById('downloadCertBtn').addEventListener('click', downloadCertificate);
@@ -1302,8 +1421,11 @@ function initChatbot() {
     if (!text) return;
 
     if (questionActive) {
-      addBubble('🚫 Der Bot steht während einer Frage nicht zur Verfügung – beantworte zuerst die Aufgabe!', 'bot');
-      return;
+      const chapter = LESSON.chapters[nextChapterIndex];
+      if (chapter) {
+        botInteractions[chapter.id] = true;
+        updateSkipButton(chapter);
+      }
     }
 
     input.value = '';
