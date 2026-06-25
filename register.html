@@ -80,6 +80,16 @@
               required
             />
           </div>
+          <div class="avatar-register-section">
+            <label class="form-group" style="margin-bottom:8px">
+              <span style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em">Avatar wählen</span>
+            </label>
+            <div class="avatar-register-picker">
+              <button type="button" class="avatar-nav-btn" id="regAvatarPrev">◀</button>
+              <img class="avatar-register-img" id="regAvatarImg" alt="Avatar" />
+              <button type="button" class="avatar-nav-btn" id="regAvatarNext">▶</button>
+            </div>
+          </div>
           <button type="submit" class="btn-primary login-submit-btn" id="registerBtn">Konto erstellen</button>
         </form>
 
@@ -155,6 +165,7 @@
 
         localStorage.setItem('ibk_token', data.token);
         localStorage.setItem('ibk_user', JSON.stringify({ id: data.userId, username: data.username }));
+        localStorage.setItem('ibk_avatar', regAvatarSeed);
         window.location.href = 'index.html';
 
       } catch (err) {
@@ -163,6 +174,19 @@
         btn.textContent = 'Konto erstellen';
       }
     });
+
+    // Avatar picker for registration
+    const AVATAR_STYLES = ['adventurer','adventurer-neutral','avataaars','bottts','fun-emoji','lorelei','notionists','open-peeps','pixel-art','thumbs'];
+    let regAvatarIdx = Math.floor(Math.random() * AVATAR_STYLES.length);
+    let regAvatarSeed = AVATAR_STYLES[regAvatarIdx];
+    const regImg = document.getElementById('regAvatarImg');
+    function updateRegAvatar() {
+      regAvatarSeed = AVATAR_STYLES[regAvatarIdx];
+      regImg.src = `https://api.dicebear.com/9.x/${regAvatarSeed}/svg?seed=${Date.now()}`;
+    }
+    updateRegAvatar();
+    document.getElementById('regAvatarPrev').addEventListener('click', () => { regAvatarIdx = (regAvatarIdx - 1 + AVATAR_STYLES.length) % AVATAR_STYLES.length; updateRegAvatar(); });
+    document.getElementById('regAvatarNext').addEventListener('click', () => { regAvatarIdx = (regAvatarIdx + 1) % AVATAR_STYLES.length; updateRegAvatar(); });
   </script>
 </body>
 </html>

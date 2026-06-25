@@ -281,9 +281,32 @@ function onChapterReached(chapter) {
   ttsBtn.title = 'Frage vorlesen';
   ttsBtn.addEventListener('click', () => {
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(chapter.task?.question || '');
-    utter.lang = chapter.id === 1 || chapter.id === 8 ? 'en-US' : 'de-DE';
-    utter.rate = 0.9;
+    const isEnglish = chapter.id === 1 || chapter.id === 8;
+    const lang = isEnglish ? 'en-US' : 'de-DE';
+    let text = chapter.task?.question || '';
+    if ((chapter.task?.type === 'single' || chapter.task?.type === 'multiple') && Array.isArray(chapter.task?.options)) {
+      const labels = ['A', 'B', 'C', 'D'];
+      const prefix = isEnglish ? 'Answer' : 'Antwort';
+      const optionsText = chapter.task.options
+        .map((opt, i) => `${prefix} ${labels[i] || (i + 1)}: ${opt}`)
+        .join('. ');
+      text += ' ... ' + optionsText + '.';
+    }
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = lang;
+    utter.rate = 0.85;
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.filter(v => {
+      const nameMatch = /google|samantha|daniel/i.test(v.name);
+      const langMatch = v.lang.startsWith(isEnglish ? 'en' : 'de');
+      return nameMatch && langMatch;
+    });
+    if (preferred.length > 0) {
+      utter.voice = preferred[0];
+    } else {
+      const langVoice = voices.find(v => v.lang.startsWith(isEnglish ? 'en' : 'de'));
+      if (langVoice) utter.voice = langVoice;
+    }
     ttsBtn.classList.add('tts-active');
     utter.onend = () => ttsBtn.classList.remove('tts-active');
     window.speechSynthesis.speak(utter);
@@ -961,11 +984,70 @@ function initOnboarding() {
   });
 }
 
+// ===========================
+// Avatar System (DiceBear)
+// ===========================
+
+const AVATAR_STYLES = ['adventurer','adventurer-neutral','avataaars','bottts','fun-emoji','lorelei','notionists','open-peeps','pixel-art','thumbs'];
+
+function getAvatarUrl(style) {
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${currentUser.username}`;
+}
+
+function loadUserAvatar() {
+  const style = localStorage.getItem('ibk_avatar');
+  const avatarEl = document.getElementById('userAvatar');
+  if (style && AVATAR_STYLES.includes(style)) {
+    avatarEl.innerHTML = `<img src="${getAvatarUrl(style)}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover" />`;
+  } else {
+    avatarEl.textContent = currentUser.username.charAt(0).toUpperCase();
+  }
+}
+
+function initAvatarPicker() {
+  const modal = document.getElementById('avatarModal');
+  const closeBtn = document.getElementById('avatarClose');
+  const prevBtn = document.getElementById('avatarPrev');
+  const nextBtn = document.getElementById('avatarNext');
+  const saveBtn = document.getElementById('avatarSaveBtn');
+  const previewImg = document.getElementById('avatarPreviewImg');
+  const styleLabel = document.getElementById('avatarStyleLabel');
+  const badge = document.getElementById('userBadge');
+
+  let currentIdx = Math.max(0, AVATAR_STYLES.indexOf(localStorage.getItem('ibk_avatar') || ''));
+
+  function updatePreview() {
+    previewImg.src = getAvatarUrl(AVATAR_STYLES[currentIdx]);
+    styleLabel.textContent = AVATAR_STYLES[currentIdx];
+  }
+
+  badge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIdx = Math.max(0, AVATAR_STYLES.indexOf(localStorage.getItem('ibk_avatar') || ''));
+    modal.classList.add('open');
+    updatePreview();
+  });
+
+  closeBtn.addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  prevBtn.addEventListener('click', () => { currentIdx = (currentIdx - 1 + AVATAR_STYLES.length) % AVATAR_STYLES.length; updatePreview(); });
+  nextBtn.addEventListener('click', () => { currentIdx = (currentIdx + 1) % AVATAR_STYLES.length; updatePreview(); });
+
+  saveBtn.addEventListener('click', () => {
+    localStorage.setItem('ibk_avatar', AVATAR_STYLES[currentIdx]);
+    loadUserAvatar();
+    modal.classList.remove('open');
+    showToast('Avatar gespeichert!', 'success');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   initOnboarding();
   // User-Info
   document.getElementById('userNameDisplay').textContent = currentUser.username;
-  document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+  loadUserAvatar();
+  initAvatarPicker();
   document.getElementById('logoutBtn').addEventListener('click', logout);
 
   // Lesson-Titel
@@ -1023,7 +1105,7 @@ function initChatbot() {
   const open  = () => { isOpen=true;  win.classList.add('open');    win.setAttribute('aria-hidden','false'); input.focus(); };
   const close = () => { isOpen=false; win.classList.remove('open'); win.setAttribute('aria-hidden','true'); };
 
-  fab.addEventListener('click',                  () => isOpen ? close() : open());
+  if (fab) fab.addEventListener('click',           () => isOpen ? close() : open());
   if (heroBtn) heroBtn.addEventListener('click', () => isOpen ? close() : open());
   closeBtn.addEventListener('click', close);
   sendBtn.addEventListener('click', sendMsg);
