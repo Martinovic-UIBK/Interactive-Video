@@ -874,19 +874,18 @@ async function submitOpenQuestion(chapter) {
   submitBtn.disabled = true;
   ta.disabled = true;
   document.getElementById('feedbackBox').className = 'feedback-box';
-
-  const spinner = document.createElement('div');
-  spinner.className = 'spinner';
-  submitBtn.prepend(spinner);
   document.getElementById('submitBtnText').textContent = 'Wird bewertet…';
   document.getElementById('submitHint').textContent = '';
 
-  let isCorrect = false;
-  let feedback = '';
+  const wordCount = txt.split(/\s+/).length;
+  let isCorrect = evaluateLocally(txt, chapter.task.keyInfo || '') || wordCount >= 5;
+  let feedback = isCorrect
+    ? (chapter.task.feedback || 'Gut gemacht! Deine Antwort wurde akzeptiert.')
+    : 'Schreib noch etwas mehr – mindestens einen ganzen Satz mit Bezug zur Frage!';
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(`${BACKEND_URL}/api/evaluate`, {
       method: 'POST', headers: authHeaders(),
       body: JSON.stringify({
@@ -900,18 +899,12 @@ async function submitOpenQuestion(chapter) {
       signal: controller.signal
     });
     clearTimeout(timeout);
-    if (res.status === 401) { logout(); return; }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message);
-    isCorrect = data.correct;
-    feedback = data.feedback;
-  } catch (_) {
-    isCorrect = evaluateLocally(txt, chapter.task.keyInfo || '');
-    if (!isCorrect && txt.split(/\s+/).length >= 5) isCorrect = true;
-    feedback = isCorrect
-      ? (chapter.task.feedback || 'Gut gemacht! Deine Antwort wurde akzeptiert.')
-      : 'Schreib noch etwas mehr – mindestens einen ganzen Satz mit Bezug zur Frage!';
-  }
+    if (res.ok) {
+      const data = await res.json();
+      isCorrect = data.correct;
+      feedback = data.feedback;
+    }
+  } catch (_) { }
 
   spinner.remove();
   showFeedback(isCorrect, feedback);
