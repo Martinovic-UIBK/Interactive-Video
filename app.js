@@ -858,6 +858,13 @@ function submitClientSide(chapter) {
   }
 }
 
+function evaluateLocally(answer, keyInfo) {
+  const words = answer.toLowerCase().split(/\s+/);
+  const keywords = keyInfo.toLowerCase().split(/[\s,]+/).filter(k => k.length > 2);
+  const hits = keywords.filter(k => words.some(w => w.includes(k) || k.includes(w)));
+  return hits.length >= 1 && words.length >= 3;
+}
+
 async function submitOpenQuestion(chapter) {
   const ta  = document.getElementById('answerInput');
   const txt = ta?.value.trim();
@@ -866,15 +873,20 @@ async function submitOpenQuestion(chapter) {
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
   ta.disabled = true;
-  document.getElementById('submitHint').textContent = 'Gemini AI bewertet…';
   document.getElementById('feedbackBox').className = 'feedback-box';
 
   const spinner = document.createElement('div');
   spinner.className = 'spinner';
   submitBtn.prepend(spinner);
-  document.getElementById('submitBtnText').textContent = 'KI bewertet…';
+  document.getElementById('submitBtnText').textContent = 'Wird bewertet…';
+  document.getElementById('submitHint').textContent = '';
+
+  let isCorrect = false;
+  let feedback = '';
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(`${BACKEND_URL}/api/evaluate`, {
       method: 'POST', headers: authHeaders(),
       body: JSON.stringify({
@@ -884,52 +896,40 @@ async function submitOpenQuestion(chapter) {
         answer:    txt,
         points:    pointsForAttempts(attemptsMap[chapter.id] || 1),
         attempts:  attemptsMap[chapter.id] || 1
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
     if (res.status === 401) { logout(); return; }
     const data = await res.json();
     if (!res.ok) throw new Error(data.message);
-    spinner.remove();
+    isCorrect = data.correct;
+    feedback = data.feedback;
+  } catch (_) {
+    isCorrect = evaluateLocally(txt, chapter.task.keyInfo || '');
+    if (!isCorrect && txt.split(/\s+/).length >= 5) isCorrect = true;
+    feedback = isCorrect
+      ? (chapter.task.feedback || 'Gut gemacht! Deine Antwort wurde akzeptiert.')
+      : 'Schreib noch etwas mehr – mindestens einen ganzen Satz mit Bezug zur Frage!';
+  }
 
-    showFeedback(data.correct, data.feedback);
+  spinner.remove();
+  showFeedback(isCorrect, feedback);
 
-    if (data.correct) {
-      submitBtn.disabled = true;
-      progressMap[chapter.id] = {
-        station_number: chapter.id, video_watched: true,
-        answer_text: txt, is_correct: true, feedback: data.feedback
-      };
-      updateProgressUI();
-      setTimeout(() => afterCorrectAnswer(chapter, data.feedback), 1200);
-    } else {
-      ta.disabled = false;
-      attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
-      updateSkipButton(chapter);
-      if (chapter.task.rewindTo != null) {
-        startRetryTimer(chapter, 10, () => {
-          // Video zum Wiederholungs-Zeitstempel zurückspulen
-          document.getElementById('panelQuestion').classList.add('hidden');
-          document.getElementById('panelWaiting').classList.remove('hidden');
-          questionActive = false;
-          ytPlayer.seekTo(chapter.task.rewindTo);
-          ytPlayer.playVideo();
-          showToast('⏪ Schau dir den Abschnitt nochmal an!', 'info', 3000);
-        });
-      } else {
-        startRetryTimer(chapter, 10);
-      }
-    }
-  } catch (err) {
-    spinner.remove();
-    const fallbackFeedback = chapter.task.feedback || 'Gut gemacht! Deine Antwort wurde akzeptiert.';
-    showFeedback(true, fallbackFeedback);
+  if (isCorrect) {
     submitBtn.disabled = true;
+    saveProgressClientSide(chapter.id, txt, feedback);
     progressMap[chapter.id] = {
       station_number: chapter.id, video_watched: true,
-      answer_text: txt, is_correct: true, feedback: fallbackFeedback
+      answer_text: txt, is_correct: true, feedback
     };
     updateProgressUI();
-    setTimeout(() => afterCorrectAnswer(chapter, fallbackFeedback), 1200);
+    setTimeout(() => afterCorrectAnswer(chapter, feedback), 1200);
+  } else {
+    ta.disabled = false;
+    attemptsMap[chapter.id] = (attemptsMap[chapter.id] || 1) + 1;
+    updateSkipButton(chapter);
+    startRetryTimer(chapter, 10);
   }
 }
 
@@ -1443,9 +1443,13 @@ function initChatbot() {
     typing.innerHTML='<span></span><span></span><span></span>';
     msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
       const res  = await fetch(`${BACKEND_URL}/api/chat`, {
-        method:'POST', headers: authHeaders(), body: JSON.stringify({ message: text })
+        method:'POST', headers: authHeaders(), body: JSON.stringify({ message: text }),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       document.getElementById('chatTyping')?.remove();
       if (res.status===401) { logout(); return; }
       const data = await res.json();
@@ -1453,7 +1457,7 @@ function initChatbot() {
       addBubble(data.reply, 'bot');
     } catch (err) {
       document.getElementById('chatTyping')?.remove();
-      addBubble(`⚠️ ${err.message}`, 'error');
+      addBubble('Leider kann ich gerade nicht antworten – der Server ist nicht erreichbar. Versuche es gleich nochmal! 🔄', 'bot');
     } finally {
       sendBtn.disabled = input.disabled = false;
       input.focus();
