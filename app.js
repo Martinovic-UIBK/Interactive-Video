@@ -339,6 +339,7 @@ function onChapterReached(chapter) {
 // ===========================
 
 function canSkip(chapterId) {
+  if (chapterId === 7 || chapterId === 13) return true;
   return (attemptsMap[chapterId] || 0) >= 2 && botInteractions[chapterId];
 }
 
