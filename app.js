@@ -1166,6 +1166,7 @@ function startRetryTimer(chapter, seconds, onExpire) {
         const hint = document.getElementById('submitHint');
         if (hint) hint.textContent = 'Versuche es nochmal!';
         renderTaskUI(chapter.task, true);
+        addSkipButton(chapter);
       }
     }
   }, 1000);
