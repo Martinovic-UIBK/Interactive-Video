@@ -143,3 +143,4 @@ Video-ID in `questions.js` prüfen. Video muss öffentlich sein und Einbettung e
 
 **Gemini antwortet nicht?**  
 `GEMINI_API_KEY` in den Render-Umgebungsvariablen prüfen. Kostenloses Kontingent reicht für den Schulbetrieb aus.
+
