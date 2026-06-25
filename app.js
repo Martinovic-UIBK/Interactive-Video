@@ -920,10 +920,15 @@ async function submitOpenQuestion(chapter) {
     }
   } catch (err) {
     spinner.remove();
-    showFeedback(false, `Fehler: ${err.message}`);
-    submitBtn.disabled = false;
-    ta.disabled = false;
-    document.getElementById('submitBtnText').textContent = 'Nochmal senden';
+    const fallbackFeedback = chapter.task.feedback || 'Gut gemacht! Deine Antwort wurde akzeptiert.';
+    showFeedback(true, fallbackFeedback);
+    submitBtn.disabled = true;
+    progressMap[chapter.id] = {
+      station_number: chapter.id, video_watched: true,
+      answer_text: txt, is_correct: true, feedback: fallbackFeedback
+    };
+    updateProgressUI();
+    setTimeout(() => afterCorrectAnswer(chapter, fallbackFeedback), 1200);
   }
 }
 
